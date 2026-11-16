@@ -6,6 +6,8 @@ does not imply a PyPI package or a GitHub release has been published.
 
 ## Unreleased
 
+- Reject cyclic configured paths consistently on Python 3.13 and newer, while
+  allowing new data directories that have not yet been created.
 - Apache 2.0 license, contributor and security documentation, bilingual README,
   issue and pull request templates, CI and a public-tree check.
 - Concise interface and Markdown draft wording. Existing format-1 output

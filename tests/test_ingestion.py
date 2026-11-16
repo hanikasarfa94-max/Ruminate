@@ -241,11 +241,19 @@ def test_exact_file_authorization_does_not_expand_to_directory(
         assert result["error"]["code"] == "file_not_authorized"
 
 
-def test_config_rejects_cyclic_authorized_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("location", ["storage", "authorized_root"])
+@pytest.mark.parametrize("suffix", ["", "missing/child"])
+def test_config_rejects_cyclic_path(tmp_path: Path, location: str, suffix: str) -> None:
     loop = tmp_path / "loop"
     loop.symlink_to(loop)
-    with pytest.raises(RuminateError, match="resolve"):
-        Config(tmp_path / "data", allowed_roots=(loop,))
+    selected = loop / suffix
+    with pytest.raises(RuminateError, match="resolve") as error:
+        if location == "storage":
+            Config(selected)
+        else:
+            Config(tmp_path / "data", allowed_roots=(selected,))
+    assert error.value.code == "invalid_config"
+    assert not (tmp_path / "data").exists()
 
 
 def test_blob_integrity_and_nested_symlink_protection(app: Application, tmp_path: Path) -> None:

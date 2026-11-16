@@ -10,6 +10,17 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ruminate.errors import RuminateError
 
 
+def _resolve_config_path(path: Path) -> Path:
+    resolved = path.expanduser().resolve()
+    # Python 3.13+ suppresses symlink loops in non-strict resolve(). stat()
+    # still reports them while FileNotFoundError permits a new storage path.
+    try:
+        resolved.stat()
+    except FileNotFoundError:
+        pass
+    return resolved
+
+
 def default_data_dir(environ: Mapping[str, str], platform: str = sys.platform) -> Path:
     if platform == "darwin":
         return Path.home() / "Library" / "Application Support" / "Ruminate"
@@ -45,8 +56,8 @@ class Config:
         if not 0 < self.parse_timeout <= 60 or not 0 < self.fetch_timeout <= 60:
             raise RuminateError("invalid_config", "Parser and fetch timeouts must be in (0, 60]")
         try:
-            object.__setattr__(self, "data_dir", self.data_dir.expanduser().resolve())
-            roots = tuple(p.expanduser().resolve() for p in self.allowed_roots)
+            object.__setattr__(self, "data_dir", _resolve_config_path(self.data_dir))
+            roots = tuple(_resolve_config_path(p) for p in self.allowed_roots)
         except (OSError, RuntimeError) as exc:
             raise RuminateError(
                 "invalid_config", "Cannot resolve configured storage or file scopes"
