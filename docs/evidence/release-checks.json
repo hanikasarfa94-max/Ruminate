@@ -140,13 +140,49 @@
         "desktop_render_observed": false
       },
       "github_ci": {
-        "status": "pending",
-        "workflow": ".github/workflows/ci.yml"
+        "status": "passed",
+        "workflow": ".github/workflows/ci.yml",
+        "run_url": "https://github.com/hanikasarfa94-max/Ruminate/actions/runs/43856582384",
+        "checked_commit": "7cf40155cda1007e238708301080a323ba12274e",
+        "jobs": [
+          {
+            "name": "ubuntu-latest / Python 3.11",
+            "status": "passed"
+          },
+          {
+            "name": "ubuntu-latest / Python 3.13",
+            "status": "passed"
+          },
+          {
+            "name": "macos-latest / Python 3.11",
+            "status": "passed"
+          }
+        ]
       },
       "public_tree": {
         "staged_files": 161,
         "credential_or_personal_path_findings": 0,
         "documentation_links": "passed"
+      },
+      "github_installer": {
+        "status": "passed",
+        "version": "0.6.0",
+        "github_archive": true,
+        "fresh_install": true,
+        "repeat_install": true,
+        "data_and_permissions_preserved": true,
+        "unrelated_config_preserved": true,
+        "uninstall_keeps_data": true,
+        "tool_count": 28,
+        "entrypoints": [
+          {
+            "type": "global"
+          },
+          {
+            "type": "thread"
+          }
+        ],
+        "desktop_render_observed": false
       }
     }
   ]

@@ -11,6 +11,8 @@
 - schema-5 备份校验后恢复并升级到 schema 6，旧 ZIP 与历史提纲不变；错误 schema 声明会拒绝恢复。
 - 浏览器覆盖主题编辑、资料改名、分类、多层弹窗新建主题、恢复标题、改名搜索和历史提纲逐字节核对；390px 窄窗口与深色主题通过。
 - macOS arm64 的临时 Codex 配置完成源码全新安装、重复安装及卸载后资料保留检查；实际 app-server 可发现 28 个工具和 global/thread 入口。
+- 独立 wheel 安装与公开 GitHub 标签下载后的全新安装、重复安装、权限和资料保留检查均通过。
+- Linux Python 3.11 / 3.13 与 macOS Python 3.11 的[远程 CI](https://github.com/hanikasarfa94-max/Ruminate/actions/runs/43856582384) 均通过。具体提交与结果记录在 [release-checks.json](evidence/release-checks.json) 的 `subsequent_releases`。
 
 浏览器报告见 [browser-workflow.json](evidence/browser-workflow.json)。协议测试使用合成资料，原生桌面完整点击流程仍单独验收。
 
