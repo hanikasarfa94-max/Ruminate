@@ -44,8 +44,8 @@ env = { RUMINATE_DATA_DIR = "/absolute/path/to/data", RUMINATE_MCP_WRITES = "1" 
 启用工作流后增加：
 
 - 读取：`list_topics`、`list_sources`、`get_output_revision`、`get_capture_job`。
-- 保存：`create_topic`、`ingest_url`、`ingest_local_file`、`record_claim`、`link_evidence`、`present_review_queue`、`record_review_feedback`、`create_output_project`、`create_output_draft`、`record_visual_observation`。
-- 内嵌 UI：`open_workspace` 渲染工作区；`ui_read`、`ui_write` 供组件通过 MCP Apps 桥调用。共 26 个工具，其中这两个组件工具不提供给模型自动选择。
+- 保存：`create_topic`、`update_topic`、`update_source`、`ingest_url`、`ingest_local_file`、`record_claim`、`link_evidence`、`present_review_queue`、`record_review_feedback`、`create_output_project`、`create_output_draft`、`record_visual_observation`。
+- 内嵌 UI：`open_workspace` 渲染工作区；`ui_read`、`ui_write` 供组件通过 MCP Apps 桥调用。共 28 个工具，其中这两个组件工具不提供给模型自动选择。
 
 导入的幂等键持久关联一个 capture job。重复请求返回该 job 当前状态，不再次读取原文件或联网；相同键不同内容会报冲突。失败或中断的 job 可通过现有 CLI 重试。其余写入沿用知识库、反馈、输出服务的事务与审计。
 
@@ -57,5 +57,5 @@ env = { RUMINATE_DATA_DIR = "/absolute/path/to/data", RUMINATE_MCP_WRITES = "1" 
 原始宿主日志留在本地；公开的结果和复现方式见 [EVALUATION.md](EVALUATION.md)
 和 [TESTING.md](TESTING.md)。
 
-插件入口可发现 26 个工具及 global/thread 入口，原生工作台已通过人工验收。
+插件入口可发现 28 个工具及 global/thread 入口，原生工作台已通过人工验收。
 公共插件市场分发与个人本地安装是分别验证的能力，当前提供源码及本地安装方式。

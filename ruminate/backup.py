@@ -27,6 +27,7 @@ from ruminate.persistence.common import Store, json_dump, timestamp
 from ruminate.persistence.database import (
     bundled_migrations,
     connect,
+    initialize,
     validate_database,
     verify_history,
 )
@@ -129,7 +130,7 @@ def _hash_file(path: Path, max_bytes: int) -> tuple[str, int]:
     return digest.hexdigest(), size
 
 
-def _validate_snapshot(path: Path) -> dict[str, Any]:
+def _validate_snapshot(path: Path, *, allow_older: bool = False) -> dict[str, Any]:
     if path.stat().st_size > MAX_DATABASE_BYTES:
         raise _fail("Database exceeds the backup size budget")
     try:
@@ -138,7 +139,7 @@ def _validate_snapshot(path: Path) -> dict[str, Any]:
             connection.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
             validate_database(connection)
             schema = verify_history(connection, bundled_migrations())
-            if schema != len(bundled_migrations()):
+            if schema != len(bundled_migrations()) and not (allow_older and schema >= 5):
                 raise _fail("Backup requires the same current schema version")
             if connection.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
                 raise _fail("Database integrity check failed")
@@ -380,8 +381,10 @@ class BackupService:
                 try:
                     with _regular_file(archive, MAX_TOTAL_BYTES + 16 * 1024 * 1024) as stream:
                         with zipfile.ZipFile(stream, "r") as zipped:
-                            entries = self._extract(zipped, stage)
-                    snapshot = _validate_snapshot(stage / "ruminate.sqlite3")
+                            entries, archived_schema = self._extract(zipped, stage)
+                    snapshot = _validate_snapshot(stage / "ruminate.sqlite3", allow_older=True)
+                    if snapshot["schema_version"] != archived_schema:
+                        raise _fail("Manifest schema differs from the database history")
                     expected = _expected_names(snapshot)
                     if expected != set(entries):
                         raise _fail("Manifest does not match the database's referenced content")
@@ -392,6 +395,12 @@ class BackupService:
                         stage / "records.json", MAX_RECORD_BYTES
                     ):
                         raise _fail("Structured records do not match the database snapshot")
+                    # Authenticate the old snapshot and records before applying bundled SQL.
+                    # The archive stays intact; only this new restore directory is upgraded.
+                    if archived_schema < len(bundled_migrations()):
+                        snapshot["schema_version"] = initialize(stage / "ruminate.sqlite3")
+                        (stage / "records.json").unlink()
+                        _write_records(stage / "ruminate.sqlite3", stage / "records.json")
                     (stage / "blobs").mkdir(mode=0o700, exist_ok=True)
                     (stage / "outputs").mkdir(mode=0o700, exist_ok=True)
                     outputs = OutputService(Config(stage, network_mode="off"))
@@ -404,13 +413,16 @@ class BackupService:
             "status": "ok",
             "data_dir": str(parent / name),
             "schema_version": snapshot["schema_version"],
+            "restored_from_schema": archived_schema,
             "entries": len(entries),
             "source_blobs": len(snapshot["blobs"]),
             "output_revisions": len(snapshot["revisions"]),
         }
 
     @staticmethod
-    def _extract(zipped: zipfile.ZipFile, stage: Path) -> dict[str, dict[str, Any]]:
+    def _extract(
+        zipped: zipfile.ZipFile, stage: Path,
+    ) -> tuple[dict[str, dict[str, Any]], int]:
         infos = zipped.infolist()
         names = [info.filename for info in infos]
         if (
@@ -452,7 +464,8 @@ class BackupService:
             or manifest.get("format") != "ruminate-backup"
             or type(manifest.get("format_version")) is not int
             or manifest.get("format_version") != 1
-            or manifest.get("schema_version") != len(bundled_migrations())
+            or type(manifest.get("schema_version")) is not int
+            or not 5 <= manifest["schema_version"] <= len(bundled_migrations())
             or not isinstance(manifest.get("entries"), list)
         ):
             raise _fail("Unsupported backup manifest")
@@ -491,4 +504,4 @@ class BackupService:
             destination.chmod(0o600)
             if size != entry["size"] or digest.hexdigest() != entry["sha256"]:
                 raise _fail("Backup member failed integrity verification")
-        return entries
+        return entries, manifest["schema_version"]

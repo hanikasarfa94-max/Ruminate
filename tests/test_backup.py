@@ -103,6 +103,49 @@ def write_members(path: Path, members: dict[str, bytes], *, update_manifest: boo
     return path
 
 
+def test_schema5_backup_is_verified_then_upgraded_in_new_directory(
+    prepared: dict[str, Any], tmp_path: Path,
+) -> None:
+    members = read_members(export(prepared, tmp_path))
+    legacy = tmp_path / "legacy.sqlite3"
+    legacy.write_bytes(members["ruminate.sqlite3"])
+    with connect(legacy) as db:
+        db.execute("ALTER TABLE sources DROP COLUMN title_is_custom")
+        db.execute("DELETE FROM schema_migrations WHERE version=6")
+    records = tmp_path / "legacy-records.json"
+    backup._write_records(legacy, records)
+    members["ruminate.sqlite3"] = legacy.read_bytes()
+    members["records.json"] = records.read_bytes()
+    manifest = json.loads(members["manifest.json"])
+    manifest["schema_version"] = 5
+    members["manifest.json"] = json.dumps(manifest).encode()
+    archive = write_members(tmp_path / "legacy.zip", members, update_manifest=True)
+    checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+    restored = Application(Config(tmp_path / "restored-legacy", "off"))
+    result = restored.backups.import_backup(archive)
+    assert result["schema_version"] == 6 and result["restored_from_schema"] == 5
+    assert restored.health_check()["status"] == "ok"
+    assert restored.get_source(prepared["source"]["source_id"])["title_is_custom"] is False
+    assert restored.outputs.get_revision(prepared["project"]["project_id"]) == (
+        prepared["outputs"].get_revision(prepared["project"]["project_id"])
+    )
+    assert hashlib.sha256(archive.read_bytes()).hexdigest() == checksum
+
+
+def test_backup_manifest_cannot_misstate_its_schema(
+    prepared: dict[str, Any], tmp_path: Path,
+) -> None:
+    members = read_members(export(prepared, tmp_path))
+    manifest = json.loads(members["manifest.json"])
+    manifest["schema_version"] = 5
+    members["manifest.json"] = json.dumps(manifest).encode()
+    archive = write_members(tmp_path / "wrong-schema.zip", members)
+    destination = tmp_path / "not-published"
+    with pytest.raises(RuminateError, match="schema differs"):
+        BackupService(Config(destination, "off")).import_backup(archive)
+    assert not destination.exists()
+
+
 def assert_failed_restore_is_clean(archive: Path, tmp_path: Path) -> None:
     target = tmp_path / "rejected-store"
     with pytest.raises(RuminateError):

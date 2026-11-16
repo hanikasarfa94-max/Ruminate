@@ -29,6 +29,7 @@ const icons = {
   chat: '<path d="M21 11a8 8 0 0 1-8 8H5l-3 3V7a5 5 0 0 1 5-5h6a8 8 0 0 1 8 9ZM7 8h9M7 12h6"/>',
   chevron: '<path d="m6 9 6 6 6-6"/>',
   expand: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
+  edit: '<path d="m14 5 5 5M4 20l5-1L20 8a3 3 0 0 0-5-5L4 14v6Z"/>',
 };
 const kindLabels = { source_assertion: "资料观点", model_inference: "推测", hypothesis: "假设", question: "问题" };
 const projectLabels = { research_note: "研究笔记", literature_review: "文献综述", research_proposal: "研究提纲", product_spec: "产品方案", article: "文章" };
@@ -214,7 +215,14 @@ async function navigate(view, options = {}) {
   searchInput.addEventListener("input", e => { if (!e.isComposing) { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 350); } });
   const topic = topicSelect(state.topic, true); topic.setAttribute("aria-label", "筛选主题");
   const newTopic = el("option", "", "+ 新建主题"); newTopic.value = "__new__"; topic.append(newTopic);
-  topic.addEventListener("change", () => { if (topic.value === "__new__") { topic.value = state.topic; openTopic(); } else { state.topic = topic.value; state.offset = 0; navigate(state.view); } });
+  const selectedTopic = state.topics.find(t => t.topic_id === state.topic || t.slug === state.topic);
+  if (selectedTopic) { const editTopic = el("option", "", "编辑当前主题…"); editTopic.value = "__edit__"; topic.append(editTopic); }
+  topic.addEventListener("change", () => {
+    if (topic.value === "__new__" || topic.value === "__edit__") {
+      const editing = topic.value === "__edit__"; topic.value = state.topic;
+      openTopic({ topic: editing ? selectedTopic : null });
+    } else { state.topic = topic.value; state.offset = 0; navigate(state.view); }
+  });
   const sort = el("select", "select sort-select"); sort.setAttribute("aria-label", "排序");
   [["recent", "最近保存"], ["oldest", "最早保存"], ["title", "按名称"]].forEach(([value, label]) => { const o = el("option", "", label); o.value = value; sort.append(o); });
   sort.value = state.sort; sort.addEventListener("change", () => { state.sort = sort.value; state.offset = 0; navigate(state.view); });
@@ -488,13 +496,72 @@ function bindSubmit(form, submit, work, working) {
     finally { submit.disabled = false; submit.textContent = label; }
   });
 }
-function openTopic() {
-  const modal = dialog("新建研究主题", "用主题归类资料、想法和输出。"); const form = el("form", "dialog-form");
+function openTopic({ topic = null, onSaved = null } = {}) {
+  const modal = dialog(topic ? "编辑主题" : "新建研究主题", "用主题归类资料、想法和输出。"); const form = el("form", "dialog-form");
   const name = input("例如：电商 Agent 的真实价值"); name.maxLength = 200;
   const description = textarea("填写研究问题或范围（可选）", false);
-  const submit = submitButton("创建主题");
+  name.value = topic?.name || ""; description.value = topic?.description || "";
+  const submit = submitButton(topic ? "保存修改" : "创建主题");
   append(form, field("主题名称", name), field("想探索的问题", description), append(el("div", "form-actions"), button("取消", "ghost", null, modal.close), submit)); modal.body.append(form); name.focus();
-  bindSubmit(form, submit, async () => { const topic = await api("/api/topics", { name: name.value.trim(), description: description.value.trim() }); state.topic = topic.topic_id; await refreshState(); modal.close(); toast("研究主题已创建"); await navigate("research"); });
+  bindSubmit(form, submit, async () => {
+    const saved = await api(topic ? `/api/topics/${topic.topic_id}/edit` : "/api/topics", { name: name.value.trim(), description: description.value.trim() });
+    await refreshState(); state.dirty = true; modal.close(); toast(topic ? "主题已更新" : "研究主题已创建");
+    if (onSaved) { await onSaved(saved); return; }
+    if (!topic) { state.topic = saved.topic_id; state.offset = 0; }
+    await navigate(state.view);
+  });
+}
+
+async function openSourceEditor(id, onSaved) {
+  const modal = dialog("编辑资料", "整理名称和所属主题。"); modal.body.append(loading());
+  try {
+    const source = await api(`/api/sources/${id}?limit=1`);
+    await refreshState();
+    if (!modal.dialog.isConnected) return;
+    const form = el("form", "dialog-form"), name = input("为资料起个容易找到的名字");
+    name.maxLength = 500; name.value = source.display_title || source.title;
+    let resetTitle = false;
+    name.addEventListener("input", () => { resetTitle = false; });
+    const reset = button("恢复原始标题", "ghost small", null, () => { name.value = source.title; resetTitle = true; name.focus(); });
+    const titleField = append(el("div", "field"), field("资料名称", name), reset);
+    const selected = new Set(source.topics.map(t => t.topic_id));
+    const initial = [...selected].sort().join(",");
+    const completeTopics = source.topic_count === source.topics.length;
+    const group = el("fieldset", "topic-picker"); group.append(el("legend", "", "所属主题"));
+    const search = input("筛选主题", false, "search"); search.setAttribute("aria-label", "查找所属主题");
+    const choices = el("div", "topic-choices");
+    const available = new Map([...source.topics, ...state.topics].map(t => [t.topic_id, t]));
+    function renderChoices() {
+      const query = search.value.trim().toLocaleLowerCase();
+      const matching = [...available.values()].filter(t => t.name.toLocaleLowerCase().includes(query));
+      choices.replaceChildren();
+      matching.forEach(t => {
+        const check = el("input"); check.type = "checkbox"; check.checked = selected.has(t.topic_id); check.disabled = !completeTopics;
+        check.addEventListener("change", () => check.checked ? selected.add(t.topic_id) : selected.delete(t.topic_id));
+        choices.append(append(el("label", "topic-choice"), check, el("span", "", t.name)));
+      });
+      if (!matching.length) choices.append(el("p", "field-help", query ? "没有匹配的主题" : "还没有主题，可以在下面新建。"));
+    }
+    search.addEventListener("input", renderChoices);
+    const addTopic = button("新建主题", "ghost small", "plus", () => openTopic({ onSaved: async saved => {
+      available.set(saved.topic_id, saved); selected.add(saved.topic_id); search.value = ""; renderChoices();
+    } }));
+    addTopic.disabled = !completeTopics;
+    append(group, el("p", "field-help", completeTopics ? "可以选择多个主题；全部取消则暂不归类。" : "关联主题较多，这里暂时只编辑资料名称。"), search, choices, addTopic);
+    renderChoices();
+    const submit = submitButton("保存修改");
+    append(form, titleField, group, append(el("div", "form-actions"), button("取消", "ghost", null, modal.close), submit));
+    modal.body.replaceChildren(form); name.focus();
+    bindSubmit(form, submit, async () => {
+      const payload = {};
+      if (resetTitle) payload.reset_title = true;
+      else if (name.value.trim() !== (source.display_title || source.title)) payload.title = name.value.trim();
+      if (completeTopics && [...selected].sort().join(",") !== initial) payload.topic_ids = [...selected];
+      if (!Object.keys(payload).length) { modal.close(); return; }
+      await api(`/api/sources/${id}/edit`, payload);
+      await refreshState(); state.dirty = true; modal.close(); toast("资料信息已更新"); await onSaved();
+    });
+  } catch (error) { modal.body.replaceChildren(empty("暂时没能打开编辑", errorMessage(error), "file")); }
 }
 function openCapture() {
   const modal = dialog("添加一份资料", "保存网页、PDF 或研究笔记。");
@@ -585,9 +652,11 @@ async function openSource(id, options = {}) {
   function render() {
     if (!modal.dialog.isConnected) return;
     ++fetchSequence; releaseImage?.(); releaseImage = null;
-    modal.title.textContent = source.title;
+    modal.title.textContent = source.display_title || source.title;
     const meta = append(el("div", "reader-meta"), badge(classifySource(source).full, source.mime_type === "application/pdf" ? "purple" : ""), el("span", "", `${source.block_count} 个片段`), el("span", "", `收集于 ${formatDate(source.retrieved_at)}`));
     const url = safeURL(source.canonical_uri); if (url) { const link = append(el("a"), document.createTextNode("访问原网页"), icon("external")); link.href = transport.embedded ? "#source" : url; link.title = url; if (!transport.embedded) { link.target = "_blank"; link.rel = "noopener noreferrer"; } link.addEventListener("click", (event) => { if (transport.embedded) { event.preventDefault(); transport.openLink(url).catch((error) => toast(errorMessage(error), true)); } }); meta.append(link); }
+    source.topics.forEach(t => meta.append(badge(t.name, "gray")));
+    meta.append(button("编辑资料", "ghost small", "edit", () => openSourceEditor(id, () => fetchSource(source.version_id))));
     const tabs = el("div", "reader-tabs"); const textButton = button("原文片段", `secondary small${mode === "text" ? " active" : ""}`, "book", () => { mode = "text"; render(); }); tabs.append(textButton);
     if (source.mime_type === "application/pdf") tabs.append(button("页面图像", `secondary small${mode === "image" ? " active" : ""}`, "file", () => { mode = "image"; render(); }));
     const version = el("select", "select reader-version"); version.setAttribute("aria-label", "资料版本");
@@ -596,12 +665,12 @@ async function openSource(id, options = {}) {
     const content = el("div", "reader-content"); modal.body.replaceChildren(meta, tabs, content);
     if (mode === "image") renderPDF(content); else renderBlocks(content);
     syncSourceContext();
-    modal.body.append(technical({ "资料编号": source.source_id, "保存版本": source.version_id, "保存时间": source.retrieved_at, "原始来源": source.canonical_uri, "文件校验": source.sha256 }));
+    modal.body.append(technical({ "原始标题": source.title, "资料编号": source.source_id, "保存版本": source.version_id, "保存时间": source.retrieved_at, "原始来源": source.canonical_uri, "文件校验": source.sha256 }));
   }
   function syncSourceContext() {
     const selected = mode === "image" ? source.blocks.filter(block => block.page === page).slice(0, 3) : options.blockId ? source.blocks.filter(block => block.block_id === options.blockId) : source.blocks.slice(0, 3);
     const quote = options.span && options.blockId ? Array.from(selected[0]?.text || "").slice(options.span.start, options.span.end).join("") : "";
-    setSelection({ source: "ruminate", kind: "source", source_id: source.source_id, version_id: source.version_id, title: source.title, uri: source.canonical_uri,
+    setSelection({ source: "ruminate", kind: "source", source_id: source.source_id, version_id: source.version_id, title: source.title, display_title: source.display_title, uri: source.canonical_uri,
       reading_mode: mode, ...(mode === "image" ? { page } : {}), selected_block_id: options.blockId || null, selected_span: options.span || null,
       selected_quote: quote.slice(0, 1200), quote_truncated: quote.length > 1200,
       blocks: selected.map(block => ({ block_id: block.block_id, page: block.page, text: block.text.slice(0, 1600), text_truncated: block.text.length > 1600 })) }, source.title);

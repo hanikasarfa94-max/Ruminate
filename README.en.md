@@ -9,7 +9,7 @@ through MCP and skills. It stores sources, evidence, ideas and output revisions
 on your computer, while the existing AI host handles reading and reasoning.
 The core needs no model API key or cloud database.
 
-Version **0.5.3** is in early development. Install from GitHub into your personal
+Version **0.6.0** is in early development. Install from GitHub into your personal
 Codex plugin library; no PyPI or public directory release is available yet. Host verification is
 recorded in [compatibility](docs/COMPATIBILITY.md).
 
@@ -21,6 +21,8 @@ recorded in [compatibility](docs/COMPATIBILITY.md).
 4. Build a cited outline, retain revisions and export Markdown.
 
 The embedded workspace opens on **Ideas**, followed by **Sources** and **Outputs**.
+Rename topics, give sources memorable names and organize them into multiple topics.
+Custom names survive reimports; original titles and historical citations are retained.
 Host-generated review suggestions appear under Ideas → Pending review. Scheduling
 is configured in the user's own host; installing Ruminate does not create a task.
 

@@ -1,7 +1,7 @@
 {
   "tested_on": "2026-11-16",
-  "version": "0.5.2",
-  "fixture_scope": "Synthetic documents and a disposable test store",
+  "version": "0.6.0",
+  "fixture_scope": "Synthetic documents and an isolated test store",
   "host": "local MCP Apps protocol test host (not Codex)",
   "transport": "opaque iframe postMessage → real stdio MCP",
   "topic_created": true,
@@ -25,5 +25,10 @@
   },
   "dark_host_theme": true,
   "iframe_network_requests": [],
-  "javascript_errors": []
+  "javascript_errors": [],
+  "topic_renamed": true,
+  "source_renamed_and_reclassified": true,
+  "nested_topic_creation": true,
+  "title_reset": true,
+  "historical_citations_preserved": true
 }

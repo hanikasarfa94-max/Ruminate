@@ -222,6 +222,31 @@ class KnowledgeService:
                 )
             ]
 
+    def update_topic(
+        self, topic_id: str, *, name: str | None = None,
+        description: str | None = None, request_id: str,
+    ) -> dict[str, Any]:
+        if name is None and description is None:
+            raise RuminateError("invalid_input", "Provide a topic name or description")
+        if name is not None:
+            validate_text(name, "name", 200)
+        if description is not None:
+            validate_text(description, "description", 2000, empty=True)
+        with self.store.write() as connection:
+            topic = resolve_topic(connection, topic_id)
+            payload = {"topic_id": topic["id"], "name": name, "description": description}
+
+            def perform() -> dict[str, Any]:
+                connection.execute(
+                    "UPDATE topics SET name=?,description=? WHERE id=?",
+                    (name if name is not None else topic["name"],
+                     description if description is not None else topic["description"], topic["id"]),
+                )
+                audit(connection, "topic_updated", topic["id"])
+                return _topic(resolve_topic(connection, topic["id"]))
+
+            return mutate(connection, "update_topic", request_id, payload, perform)
+
     def create_claim(
         self,
         *,

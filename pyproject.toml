@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ruminate-local"
-version = "0.5.3"
+version = "0.6.0"
 description = "Local-first evidence and research workflows for AI hosts"
 readme = "README.md"
 license = "Apache-2.0"

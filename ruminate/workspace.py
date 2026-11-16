@@ -33,6 +33,8 @@ ReadAction = Literal[
 ]
 WriteAction = Literal[
     "create_topic",
+    "update_topic",
+    "update_source",
     "capture_url",
     "upload_file",
     "record_claim",
@@ -63,6 +65,8 @@ _READ_FIELDS = {
 }
 _WRITE_FIELDS = {
     "create_topic": {"slug", "name", "description"},
+    "update_topic": {"topic_id", "name", "description"},
+    "update_source": {"source_id", "title", "topic_ids", "reset_title"},
     "capture_url": {"url", "topic"},
     "upload_file": {"filename", "content_base64", "topic"},
     "record_claim": {
@@ -228,6 +232,17 @@ class WorkspaceAdapter:
                 ),
                 name=_required(params, "name"),
                 description=_required(params, "description", ""),
+                request_id=request_id,
+            )
+        if action == "update_topic":
+            return app.knowledge.update_topic(
+                _required(params, "topic_id"), name=params.get("name"),
+                description=params.get("description"), request_id=request_id,
+            )
+        if action == "update_source":
+            return app.management.update_source(
+                _required(params, "source_id"), title=params.get("title"),
+                topic_ids=params.get("topic_ids"), reset_title=params.get("reset_title", False),
                 request_id=request_id,
             )
         if action == "capture_url":

@@ -158,6 +158,14 @@ mark { background: #f5e7a2; color: #24291d; border-radius: 2px; }
 .field textarea { min-height: 115px; resize: vertical; }
 .field .select { max-width: none; }
 .field-help { color: var(--muted); font-size: 11px; }
+.topic-picker { min-width: 0; padding: 0; border: 0; margin: 0; }
+.topic-picker legend { font-size: 13px; margin-bottom: 4px; }
+.topic-picker > input { width: 100%; border: 1px solid var(--line); padding: 9px 12px; margin: 4px 0 8px; background: var(--bg); }
+.topic-choices { max-height: 190px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 5px; }
+.topic-choice { display: flex; align-items: flex-start; gap: 10px; padding: 9px; cursor: pointer; font-size: 13px; border-radius: 5px; overflow-wrap: anywhere; }
+.topic-choice:hover { background: var(--surface); }
+.topic-choice input { flex: 0 0 auto; width: 16px; height: 16px; margin: 1px 0; accent-color: var(--accent); }
+.topic-picker > .button { margin-top: 6px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .form-error { padding: 12px; color: var(--danger); background: var(--surface); font-size: 13px; border-radius: 8px; }
 .segmented { display: flex; gap: 4px; background: var(--surface); border-radius: 8px; padding: 4px; margin-bottom: 20px; }

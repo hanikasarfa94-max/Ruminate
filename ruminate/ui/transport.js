@@ -168,7 +168,7 @@
       window.addEventListener("message", onMessage);
       try {
         const result = await rpc("ui/initialize", {
-          appInfo: { name: "Ruminate", version: "0.5.2" },
+          appInfo: { name: "Ruminate", version: "0.6.0" },
           appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
           protocolVersion: PROTOCOL_VERSION,
         }, 10000);
@@ -230,6 +230,8 @@
       if (actions[pathname]) return { name: "ui_write", arguments: { action: actions[pathname], params: body } };
       if ((match = pathname.match(/^\/api\/reviews\/([a-z0-9_]+)\/feedback$/))) return { name: "ui_write", arguments: { action: "review_feedback", params: { ...body, review_id: match[1] } } };
       if ((match = pathname.match(/^\/api\/projects\/([a-z0-9_]+)\/draft$/))) return { name: "ui_write", arguments: { action: "create_draft", params: { ...body, project_id: match[1] } } };
+      if ((match = pathname.match(/^\/api\/sources\/([a-z0-9_]+)\/edit$/))) return { name: "ui_write", arguments: { action: "update_source", params: { ...body, source_id: match[1] } } };
+      if ((match = pathname.match(/^\/api\/topics\/([a-z0-9_-]+)\/edit$/))) return { name: "ui_write", arguments: { action: "update_topic", params: { ...body, topic_id: match[1] } } };
     } else {
       const actions = { "/api/management": "management", "/api/state": "state", "/api/topics": "topics", "/api/sources": "sources", "/api/reviews": "reviews", "/api/projects": "projects" };
       if (actions[pathname]) return { name: "ui_read", arguments: { action: actions[pathname], params: query } };

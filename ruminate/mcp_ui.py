@@ -17,7 +17,7 @@ from ruminate.application import Application
 from ruminate.errors import RuminateError
 from ruminate.workspace import ReadAction, WorkspaceAdapter, WorkspaceImage, WriteAction
 
-UI_URI = "ui://ruminate/workspace-v0.5.1.html"
+UI_URI = "ui://ruminate/workspace-v0.6.0.html"
 UI_MIME_TYPE = "text/html;profile=mcp-app"
 UI_META: dict[str, Any] = {
     "ui": {

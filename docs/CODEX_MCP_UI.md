@@ -2,7 +2,7 @@
 
 Ruminate 从插件栏或对话中的 `open_workspace` 打开。页面通过 MCP Apps 读写本地资料库，CLI、插件和自动反刍使用同一套应用服务。
 
-当前版本为 0.5.3。界面资源为 `ui://ruminate/workspace-v0.5.1.html`，MIME 类型为 `text/html;profile=mcp-app`。资源版本表示前端资源的缓存键，可与仅更新安装流程的插件版本不同。
+当前版本为 0.6.0。界面资源为 `ui://ruminate/workspace-v0.6.0.html`，MIME 类型为 `text/html;profile=mcp-app`。资源版本表示前端资源的缓存键，可与仅更新安装流程的插件版本不同。
 
 ## 安装到个人插件栏
 

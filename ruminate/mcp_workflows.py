@@ -63,6 +63,28 @@ def register_workflow_tools(server: MCPServer, app: Application) -> None:
             request_id=request_id,
         )
 
+    @server.tool(title="Edit a research topic", annotations=write)
+    def update_topic(
+        topic_id: str, request_id: str, name: str | None = None, description: str | None = None,
+    ) -> dict[str, Any]:
+        """Edit a topic's display name or scope, preserving its ID and all linked research."""
+        return _call(app.knowledge.update_topic, topic_id, name=name,
+                     description=description, request_id=request_id)
+
+    @server.tool(title="Organize a captured source", annotations=write)
+    def update_source(
+        source_id: str, request_id: str, title: str | None = None,
+        topic_ids: list[str] | None = None, reset_title: StrictBool = False,
+    ) -> dict[str, Any]:
+        """Edit a source label or its topic list when the user asks to organize it.
+
+        Omitted fields are preserved. topic_ids replaces the full classification; [] clears
+        it. reset_title restores the current original title. Source versions, evidence and
+        historical drafts stay intact. Reuse request_id when retrying this write.
+        """
+        return _call(app.management.update_source, source_id, title=title, topic_ids=topic_ids,
+                     reset_title=reset_title, request_id=request_id)
+
     @server.tool(
         title="Capture a web source",
         annotations=ToolAnnotations(

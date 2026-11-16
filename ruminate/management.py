@@ -1,4 +1,4 @@
-"""Read-only management lists, independent of proactive review exposure budgets."""
+"""Workspace organization and lists, independent of proactive review exposure budgets."""
 
 from __future__ import annotations
 
@@ -9,6 +9,8 @@ from ruminate.config import Config
 from ruminate.errors import RuminateError
 from ruminate.persistence.common import (
     Store,
+    audit,
+    mutate,
     resolve_topic,
     timestamp,
     validate_limit,
@@ -20,6 +22,70 @@ from ruminate.persistence.sources import _terms
 class ManagementService:
     def __init__(self, config: Config) -> None:
         self.store = Store(config)
+
+    def update_source(
+        self, source_id: str, *, title: str | None = None,
+        topic_ids: list[str] | None = None, reset_title: bool = False, request_id: str,
+    ) -> dict[str, Any]:
+        """Edit the source label and classification; evidence versions remain immutable."""
+        validate_text(source_id, "source_id", 100)
+        if type(reset_title) is not bool or (reset_title and title is not None):
+            raise RuminateError("invalid_input", "Choose a new title or reset_title")
+        if title is not None:
+            validate_text(title, "title", 500)
+        if title is None and topic_ids is None and not reset_title:
+            raise RuminateError("invalid_input", "Provide a title, topics or reset_title")
+        if topic_ids is not None:
+            if not isinstance(topic_ids, list) or len(topic_ids) > 50:
+                raise RuminateError("invalid_input", "Choose at most 50 topics")
+            for topic_id in topic_ids:
+                validate_text(topic_id, "topic_id", 100)
+        with self.store.write() as connection:
+            source = connection.execute(
+                "SELECT s.title,v.title AS original_title FROM sources s "
+                "JOIN source_versions v ON v.id=s.current_version_id WHERE s.id=?", (source_id,),
+            ).fetchone()
+            if source is None:
+                raise RuminateError("source_not_found", "Source does not exist")
+            selected = None
+            if topic_ids is not None:
+                topics = [resolve_topic(connection, topic_id) for topic_id in topic_ids]
+                if any(topic["status"] != "active" for topic in topics):
+                    raise RuminateError("invalid_input", "Choose active topics")
+                selected = sorted({str(topic["id"]) for topic in topics})
+            payload = {"source_id": source_id, "title": title, "topic_ids": selected,
+                       "reset_title": reset_title}
+
+            def perform() -> dict[str, Any]:
+                if title is not None or reset_title:
+                    connection.execute(
+                        "UPDATE sources SET title=?,title_is_custom=? WHERE id=?",
+                        (source["original_title"] if reset_title else title,
+                         0 if reset_title else 1, source_id),
+                    )
+                if selected is not None:
+                    connection.execute("DELETE FROM source_topics WHERE source_id=?", (source_id,))
+                    connection.executemany(
+                        "INSERT INTO source_topics(source_id,topic_id) VALUES(?,?)",
+                        [(source_id, topic_id) for topic_id in selected],
+                    )
+                audit(connection, "source_updated", source_id, {
+                    "title_changed": title is not None or reset_title,
+                    "topics_changed": selected is not None,
+                })
+                return {
+                    "source_id": source_id,
+                    "display_title": connection.execute(
+                        "SELECT title FROM sources WHERE id=?", (source_id,),
+                    ).fetchone()[0],
+                    "topics": [dict(row) for row in connection.execute(
+                        "SELECT t.id AS topic_id,t.slug,t.name FROM topics t JOIN source_topics st "
+                        "ON st.topic_id=t.id WHERE st.source_id=? ORDER BY t.name,t.id",
+                        (source_id,),
+                    )],
+                }
+
+            return mutate(connection, "update_source", request_id, payload, perform)
 
     def list_items(
         self,
@@ -89,7 +155,7 @@ class ManagementService:
     @staticmethod
     def _sources(topic: str | None, query: str) -> tuple[str, list[Any]]:
         sql = (
-            "SELECT s.id,s.id AS source_id,v.id AS version_id,v.title,s.canonical_uri,"
+            "SELECT s.id,s.id AS source_id,v.id AS version_id,s.title,s.canonical_uri,"
             "v.mime_type,v.status,v.retrieved_at AS saved_at "
             "FROM sources s JOIN source_versions v ON v.id=s.current_version_id WHERE 1=1"
         )
@@ -99,8 +165,8 @@ class ManagementService:
             sql += "AND st.topic_id=?)"
             args.append(topic)
         if query:
-            sql += " AND (instr(lower(v.title),lower(?))>0"
-            args.append(query)
+            sql += " AND (instr(lower(s.title),lower(?))>0 OR instr(lower(v.title),lower(?))>0"
+            args.extend([query, query])
             tokens = list(dict.fromkeys(_terms(query, indexing=False)))
             if len(tokens) > 64:
                 raise RuminateError("invalid_query", "Query contains too many search terms")

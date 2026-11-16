@@ -1,10 +1,21 @@
 # Changelog
 
 This log describes user-visible changes. Versions before the public repository
-were local development milestones. The current source version is 0.5.3.
+were local development milestones. The current source version is 0.6.0.
 GitHub tags distribute source; there is no PyPI publication.
 
 ## Unreleased
+
+## 0.6.0 — 2026-11-16
+
+- Edit topic names and descriptions from the workspace filter. Existing topic IDs
+  and slugs remain stable for saved research and scheduled workflows.
+- Rename sources, choose multiple topics, create a topic while organizing, or
+  restore the original title from the reading pane. Custom labels survive reimports.
+- Expose the same edits through CLI and MCP with atomic, idempotent writes.
+  Source versions, evidence locators and existing output revisions stay intact.
+- Add schema 6 for explicit source labels. Schema-5 backups restore into a new,
+  upgraded directory after integrity validation; the original archive is preserved.
 
 ## 0.5.3 — 2026-11-16
 

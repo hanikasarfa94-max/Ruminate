@@ -40,10 +40,12 @@ def test_stdio_write_workflow_and_durable_replay(tmp_path: Path) -> None:
         async with asyncio.timeout(30):
             async with Client(parameters(app.config.data_dir, source)) as client:
                 listing = await client.list_tools()
-                assert len(listing.tools) == 26
+                assert len(listing.tools) == 28
                 by_name = {tool.name: tool for tool in listing.tools}
                 for name in (
                     "create_topic",
+                    "update_topic",
+                    "update_source",
                     "ingest_url",
                     "ingest_local_file",
                     "record_claim",
@@ -129,6 +131,23 @@ def test_stdio_write_workflow_and_durable_replay(tmp_path: Path) -> None:
                 feedback = await call("record_review_feedback", feedback_input)
                 assert await call("record_review_feedback", feedback_input) == feedback
                 assert (await call("list_review_queue", {}))["cards"] == []
+                renamed = await call("update_topic", {
+                    "topic_id": topic["topic_id"], "name": "Updated research",
+                    "request_id": "rename-topic",
+                })
+                assert renamed["topic_id"] == topic["topic_id"]
+                await call("update_source", {
+                    "source_id": imported["source_id"], "title": "Named source",
+                    "topic_ids": [], "request_id": "edit-source",
+                })
+                edited = await call("get_source", {"source_id": imported["source_id"]})
+                assert edited["display_title"] == "Named source"
+                assert edited["topics"] == []
+                assert edited["blocks"] == document["blocks"]
+                assert (
+                    await call("get_output_revision", {"project_id": project["project_id"]})
+                    == revision
+                )
                 saved.update(draft_input=draft_input, draft=draft)
             async with Client(parameters(app.config.data_dir)) as restarted:
                 replay = await restarted.call_tool("create_output_draft", saved["draft_input"])

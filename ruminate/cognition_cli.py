@@ -24,6 +24,11 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     create.add_argument("--description", default="")
     _key(create)
     topic_commands.add_parser("list").add_argument("--limit", type=int, default=20)
+    edit = topic_commands.add_parser("edit", help="Edit a topic name or research scope")
+    edit.add_argument("topic")
+    edit.add_argument("--name")
+    edit.add_argument("--description")
+    _key(edit)
     context = topic_commands.add_parser("context")
     context.add_argument("topic")
     context.add_argument("--max-claims", type=int, default=20)
@@ -161,6 +166,11 @@ def dispatch(app: Application, args: argparse.Namespace) -> dict[str, Any]:
             )
         if args.action == "list":
             return {"topics": app.knowledge.list_topics(args.limit)}
+        if args.action == "edit":
+            return app.knowledge.update_topic(
+                args.topic, name=args.name, description=args.description,
+                request_id=args.request_id,
+            )
         return app.knowledge.topic_context(args.topic, max_claims=args.max_claims)
     if args.command == "claims":
         if args.action == "add":

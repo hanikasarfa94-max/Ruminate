@@ -105,7 +105,7 @@ class SourceRepository:
         with connect(self.database_path, readonly=readonly) as connection:
             validate_database(connection)
             current = verify_history(connection, bundled_migrations())
-            if current < 2:
+            if current != len(bundled_migrations()):
                 raise RuminateError("migration_required", "Run ruminate init to update the schema")
             yield connection
 
@@ -178,8 +178,10 @@ class SourceRepository:
                     )
                 if update_current:
                     connection.execute(
-                        "UPDATE sources SET current_version_id=?,title=? WHERE id=?",
-                        (version_id, title, source_id),
+                        "UPDATE sources SET title=CASE WHEN title_is_custom=0 "
+                        "THEN ? ELSE title END,"
+                        "current_version_id=? WHERE id=?",
+                        (title, version_id, source_id),
                     )
                 topic_id = self._attach_topic(connection, source_id, topic)
                 if job_id is not None:
@@ -375,7 +377,8 @@ class SourceRepository:
             filter_sql, params = _topic_filter(connection, topic)
             rows = connection.execute(
                 "SELECT s.id AS source_id,s.source_type,s.canonical_uri,s.created_at,"
-                "v.id AS version_id,v.title,v.mime_type,v.authors_json,v.published_at,v.status,"
+                "v.id AS version_id,s.title,v.title AS original_title,"
+                "v.mime_type,v.authors_json,v.published_at,v.status,"
                 "v.retrieved_at,(SELECT COUNT(*) FROM blocks b "
                 "WHERE b.version_id=v.id) AS block_count "
                 "FROM sources s JOIN source_versions v ON v.id=s.current_version_id "
@@ -455,6 +458,8 @@ class SourceRepository:
         metadata = _version(version)
         return {
             **metadata,
+            "display_title": source["title"],
+            "title_is_custom": bool(source["title_is_custom"]),
             "source_type": source["source_type"],
             "canonical_uri": source["canonical_uri"],
             "current_version_id": source["current_version_id"],
@@ -487,7 +492,8 @@ class SourceRepository:
         with self._connection() as connection:
             filter_sql, params = _topic_filter(connection, topic)
             rows = connection.execute(
-                "SELECT b.*,s.id AS source_id,s.source_type,s.canonical_uri,v.title,v.mime_type,"
+                "SELECT b.*,s.id AS source_id,s.source_type,s.canonical_uri,"
+                "s.title AS display_title,v.title,v.mime_type,"
                 "v.authors_json,v.published_at,v.retrieved_at,v.status,v.warnings_json,"
                 "-bm25(block_fts) AS score "
                 "FROM block_fts JOIN blocks b ON b.id=block_fts.block_id "
@@ -510,6 +516,7 @@ class SourceRepository:
                     "block_id": row["id"],
                     "ordinal": row["ordinal"],
                     "title": row["title"],
+                    "display_title": row["display_title"],
                     "page_or_section": row["page"] if row["page"] is not None else row["section"],
                     "locator": json.loads(row["locator_json"]),
                     "snippet": snippet,

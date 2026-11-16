@@ -149,6 +149,28 @@ def test_http_research_workflow_preserves_citations_and_review_feedback(browser:
     assert len(state["sources"]) == len(state["topics"]) == len(state["projects"]) == 1
 
 
+def test_http_organization_edits_use_shared_services_and_require_token(browser: Browser) -> None:
+    topic = browser.post("/api/topics", name="Research", request_id="topic")
+    captured = upload(browser, topic=topic["topic_id"])
+    path = "/api/sources/" + captured["source_id"]
+    original = browser.get(path)
+    browser.post(
+        "/api/topics/" + topic["topic_id"] + "/edit",
+        name="Updated research", request_id="rename-topic",
+    )
+    status, _, _ = browser.request(
+        path + "/edit", data={"title": "Unauthorized", "request_id": "denied"}, token=False,
+    )
+    assert status == 403
+    browser.post(path + "/edit", title="Named source", topic_ids=[], request_id="edit-source")
+    edited = browser.get(path)
+    assert edited["display_title"] == "Named source"
+    assert edited["title"] == original["title"]
+    assert edited["blocks"] == original["blocks"]
+    assert edited["topics"] == []
+    assert browser.get("/api/state")["topics"][0]["name"] == "Updated research"
+
+
 def test_upload_request_is_durable_and_rejects_changed_payload(browser: Browser) -> None:
     first = upload(browser)
     second = upload(browser)

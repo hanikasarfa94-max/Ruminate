@@ -104,6 +104,16 @@ test("UI paths map to bounded actions and preserve request idempotency", async (
   assert.equal(h.network.length, 0);
 });
 
+test("organization edits use MCP actions and the route owns the record ID", async (t) => {
+  const h = harness(); t.after(() => h.transport.dispose());
+  await h.transport.request("/api/sources/src_1/edit", { source_id: "src_2", title: "My label", topic_ids: [], request_id: "source-edit" });
+  await h.transport.request("/api/topics/top_1/edit", { name: "Research", request_id: "topic-edit" });
+  const calls = h.sent.filter(entry => entry.method === "tools/call");
+  assert.deepEqual(calls[0].params, { name: "ui_write", arguments: { action: "update_source", params: { source_id: "src_1", title: "My label", topic_ids: [], request_id: "source-edit" } } });
+  assert.deepEqual(calls[1].params, { name: "ui_write", arguments: { action: "update_topic", params: { topic_id: "top_1", name: "Research", request_id: "topic-edit" } } });
+  assert.equal(h.network.length, 0);
+});
+
 test("a committed write with a lost reply reuses its ID, then a new intentional submit gets a new ID", async (t) => {
   const committed = new Map();
   let loseReply = true;

@@ -223,6 +223,8 @@ def validate_database(connection: sqlite3.Connection, *, allow_empty: bool = Fal
             required_columns.update(V4_COLUMNS)
         if version >= 5:
             required_columns.update(V5_COLUMNS)
+        if version >= 6:
+            required_columns["sources"] = V2_COLUMNS["sources"] | {"title_is_custom"}
     for table, required in required_columns.items():
         # Table names are constants from this module, never caller-controlled input.
         columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}

@@ -252,6 +252,12 @@ class _Handler(BaseHTTPRequestHandler):
             elif match := re.fullmatch(r"/api/projects/([a-z0-9_]+)/draft", path):
                 action = "create_draft"
                 params["project_id"] = match[1]
+            elif match := re.fullmatch(r"/api/sources/([a-z0-9_]+)/edit", path):
+                action = "update_source"
+                params["source_id"] = match[1]
+            elif match := re.fullmatch(r"/api/topics/([a-z0-9_-]+)/edit", path):
+                action = "update_topic"
+                params["topic_id"] = match[1]
         if action is None:
             raise RuminateError("route_not_found", "没有找到这个操作。")
         return self.server.workspace.write(action, params)

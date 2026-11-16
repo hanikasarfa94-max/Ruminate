@@ -20,7 +20,7 @@ CI 在 Linux Python 3.11 / 3.13 和 macOS Python 3.11 上执行上述检查及 w
 ## 独立安装
 
 ```bash
-uv run python scripts/smoke_wheel.py dist/ruminate_local-0.5.3-py3-none-any.whl
+uv run python scripts/smoke_wheel.py dist/ruminate_local-0.6.0-py3-none-any.whl
 ```
 
 该脚本在源码目录外建立临时环境，安装 wheel，检查导入、检索、PDF 页图、认知输出、
@@ -56,7 +56,7 @@ uv run python scripts/smoke_install.py --codex /path/to/codex --output .local/in
 ```bash
 npm install --prefix .local/ui-test --no-save playwright
 .local/ui-test/node_modules/.bin/playwright install chromium
-uv run python scripts/serve_mcp_ui_harness.py --port 8767
+uv run python scripts/serve_mcp_ui_harness.py --data-dir .local/browser-test-data --port 8767
 ```
 
 在另一终端执行：
@@ -65,8 +65,8 @@ uv run python scripts/serve_mcp_ui_harness.py --port 8767
 RUMINATE_PLAYWRIGHT_MODULE="$PWD/.local/ui-test/node_modules/playwright" node scripts/smoke_mcp_ui.cjs http://127.0.0.1:8767 .local/browser-results
 ```
 
-宿主脚本使用隔离的临时资料库，经真实 stdio MCP 连接 iframe。测试完成后停止宿主进程。
-结果覆盖上传、引用、建议、反馈、输出、窄窗口、主题和对话上下文。
+宿主脚本使用上述独立测试资料库，经真实 stdio MCP 连接 iframe。请选择未使用的测试目录，测试完成后停止宿主进程。
+结果覆盖上传、引用、建议、反馈、输出、窄窗口、主题改名、资料名与分类编辑、嵌套新建主题、历史引用和对话上下文。
 这是协议验收，不是原生 Codex 桌面自动点击。
 
 ## 真实宿主检查

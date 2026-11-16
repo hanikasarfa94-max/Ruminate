@@ -7,6 +7,7 @@ before expanding into more services.
 ## Available
 
 - Local source import, immutable versions, exact locators and full-text search.
+- Topic names and descriptions, persistent source labels and source reassignment.
 - Claims and evidence links, review feedback, cited drafts and backup/restore.
 - CLI, stdio MCP, four skills and an embedded Ideas / Sources / Outputs workspace.
 - One-command GitHub installer with local runtime setup, updates and host checks.
@@ -14,7 +15,6 @@ before expanding into more services.
 
 ## Next
 
-- Improve topic naming, reassignment and source metadata editing.
 - Add archive/delete impact previews that preserve historical citations.
 - Validate fresh installations on more supported host and operating-system versions.
 - Improve source selection and duplicate handling in review suggestions.

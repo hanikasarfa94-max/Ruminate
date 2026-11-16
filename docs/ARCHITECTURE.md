@@ -1,6 +1,6 @@
 # Ruminate 本地认知内核架构
 
-当前代码版本 0.5.3，schema 5。主路径为：
+当前代码版本 0.6.0，schema 6。主路径为：
 
 `MCP Apps 管理页 / CLI / MCP → Application → 导入、知识、反刍、输出与备份服务 → SQLite + CAS blobs`。
 
@@ -20,7 +20,7 @@
 | `persistence/database.py` | WAL、数据库身份与 schema 校验、事务化迁移及 checksum。 |
 | `persistence/common.py` | 认知服务共享事务、参数校验、审计、主题解析与请求幂等。 |
 | `knowledge.py` | Topic / Claim / ClaimEvidence / UserBelief / BeliefRelation 与有范围限制的研究上下文。 |
-| `management.py` | 同一只读快照内查询资料、想法及确认观点、输出；范围搜索、稳定分页与真实计数。到期回看不受主动推送额度限制。 |
+| `management.py` | 资料显示名称与主题分类的幂等编辑；同一快照内查询资料、想法及确认观点、输出，提供稳定分页与真实计数。到期回看不受主动推送额度限制。 |
 | `review.py` | 确定性候选、可解释评分、只读队列预览、显式曝光及人工反馈。 |
 | `outputs.py` | 五种模板、不可变修订、原文引用校验、新证据影响分析、Markdown / JSON 导出。 |
 | `providers.py` / `enrichment.py` | NoLLM / Mock 提议接口、快照输入、协作超时、租约和可恢复任务；不自动写入认知结论。 |
@@ -31,7 +31,7 @@
 
 ## 存储与事务
 
-migration 001 保存应用身份、任务和审计表；002 增加来源、版本、块、索引与导入快照；003 增加独立视觉记录；004 增加认知关系、反刍与输出修订、幂等请求；005 增加 enrichment 输入与结果快照。不要修改已使用的迁移文件；旧版本通过新增迁移演进。
+migration 001 保存应用身份、任务和审计表；002 增加来源、版本、块、索引与导入快照；003 增加独立视觉记录；004 增加认知关系、反刍与输出修订、幂等请求；005 增加 enrichment 输入与结果快照；006 增加 `sources.title_is_custom`，区分用户资料名与随版本更新的原始标题。不要修改已使用的迁移文件；旧版本通过新增迁移演进。
 
 原始字节存入 `blobs/<sha256-prefix>/<sha256>`，临时文件写完并 fsync 后原子替换。读取校验路径形状与内容 hash。数据库事务共同提交版本、块、FTS、主题、任务结果和审计记录；失败不留下半套已入库证据。
 

@@ -36,6 +36,22 @@ uv run ruminate jobs retry job_... --allow-network
 
 任务同步执行并保存进度；进程中断后可在租约过期后重试，运行中的任务会返回 `job_busy`。扫描 PDF 返回 `needs_ocr` 并保留原件；这表示原生提取缺少文字，可继续由宿主查看页面。CLI 正常结果及成功保存的 `unverified` 记录退出 0，需处理状态退出 1，配置/参数等错误退出 2。
 
+## 整理资料与主题
+
+在工作台选中主题后，可从主题下拉中编辑名称和研究问题。打开资料，点击“编辑资料”可修改显示名称或所属主题。CLI 使用相同的保存逻辑：
+
+```bash
+uv run ruminate topics edit ecommerce-agents --name '电商 Agent 研究' --description '比较真实场景中的证据' --request-id topic-edit-1
+uv run ruminate sources edit src_... --title '便于检索的资料名' --request-id source-name-1
+uv run ruminate sources edit src_... --topic ecommerce-agents --request-id source-topics-1
+uv run ruminate sources edit src_... --clear-topics --request-id source-topics-2
+uv run ruminate sources edit src_... --reset-title --request-id source-name-2
+```
+
+`--topic` 可重复，表示完整的新分类；省略时保留原分类。主题可用 ID 或 slug。资料名、主题名和说明可单独修改；省略的字段不变，说明传空字符串可清空。每次新修改使用新的 request ID，重试同次修改沿用原 ID。
+
+自定义资料名会保留到后续导入；恢复原始标题后重新跟随新版本标题。`sources get` 的 `title` 是所选版本的原始标题，`display_title` 是资料显示名称，`title_is_custom` 表示是否由用户命名。主题 ID、slug、原文版本、历史证据及提纲保持原样；重新归类资料不会移动已有想法或输出。
+
 ## 从证据到反刍与研究草稿
 
 导入时的 `--topic` 可建立主题，`topics create` 可提前设置名称与说明。以下 `clm_...`、`blk_...`、`out_...` 等都是占位符，需替换为实际返回的 ID：
@@ -137,7 +153,7 @@ uv run python scripts/smoke_capture.py --live-url https://docs.python.org/3.11/l
 
 默认数据目录在仓库外：macOS 为 `~/Library/Application Support/Ruminate/`，Linux 为 `$XDG_DATA_HOME/ruminate/`（未设置时为 `~/.local/share/ruminate/`）。Windows 配置路径为 `%LOCALAPPDATA%\Ruminate\`，但当前安全导入实现要求 POSIX。
 
-可用 `RUMINATE_DATA_DIR` 或子命令之前的 `--data-dir` 覆盖。已有 P0/P1 数据运行 `init` 即应用至 schema 5 的新增迁移，原迁移历史保留：
+可用 `RUMINATE_DATA_DIR` 或子命令之前的 `--data-dir` 覆盖。已有数据运行 `init` 即应用至 schema 6 的新增迁移，原迁移历史保留：
 
 ```bash
 uv run ruminate --data-dir /absolute/path/to/private-data init
@@ -155,7 +171,7 @@ uv run ruminate --data-dir /absolute/path/to/private-data export-backup /absolut
 uv run ruminate --data-dir /absolute/path/to/new-data import-backup /absolute/path/to/backup.zip
 ```
 
-备份包含一致的 SQLite 快照、引用原件、结构化 JSON 和从已存修订生成的 Markdown/sidecar。它不复制配置、任意工作文件或已被手工修改的导出；这些改动需另行保存。恢复先校验内容，再发布新目录，不覆盖已有库。当前单包展开内容上限 512 MiB，单数据库 256 MiB，最多 10000 个条目。
+备份包含一致的 SQLite 快照、引用原件、结构化 JSON 和从已存修订生成的 Markdown/sidecar。它不复制配置、任意工作文件或已被手工修改的导出；这些改动需另行保存。恢复先校验内容，再发布新目录，不覆盖已有库。当前支持 schema 5 / 6 的备份；旧库在新目录内升级，原 ZIP 保持不变。单包展开内容上限 512 MiB，单数据库 256 MiB，最多 10000 个条目。
 
 ## MCP
 

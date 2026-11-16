@@ -59,6 +59,18 @@ def main(argv: list[str] | None = None) -> int:
     reading.add_argument("--version-id")
     reading.add_argument("--block-start", type=int, default=0)
     reading.add_argument("--block-limit", type=int, default=20)
+    editing = source_commands.add_parser(
+        "edit", help="Edit a source label and topic classification"
+    )
+    editing.add_argument("source_id")
+    titles = editing.add_mutually_exclusive_group()
+    titles.add_argument("--title")
+    titles.add_argument("--reset-title", action="store_true")
+    topics = editing.add_mutually_exclusive_group()
+    topics.add_argument("--topic", action="append", dest="topic_ids",
+                        help="Replace the full topic list; repeat for several topics")
+    topics.add_argument("--clear-topics", action="store_true")
+    editing.add_argument("--request-id", required=True)
     page_image = source_commands.add_parser(
         "page-image", help="Render one stored PDF page for Codex"
     )
@@ -149,6 +161,12 @@ def main(argv: list[str] | None = None) -> int:
                         topic=args.topic, limit=args.limit, offset=args.offset
                     )
                 }
+            elif args.source_command == "edit":
+                result = application.management.update_source(
+                    args.source_id, title=args.title,
+                    topic_ids=[] if args.clear_topics else args.topic_ids,
+                    reset_title=args.reset_title, request_id=args.request_id,
+                )
             elif args.source_command == "page-image":
                 from ruminate.ingestion.files import directory_fd
 

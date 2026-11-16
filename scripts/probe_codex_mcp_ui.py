@@ -27,7 +27,7 @@ from ruminate.application import Application
 from ruminate.config import Config
 
 ROOT = Path(__file__).resolve().parents[1]
-URI = "ui://ruminate/workspace-v0.5.1.html"
+URI = "ui://ruminate/workspace-v0.6.0.html"
 MIME = "text/html;profile=mcp-app"
 
 # The proxy records only the initialization capabilities and forwards the actual server bytes.

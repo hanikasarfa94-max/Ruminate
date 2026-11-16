@@ -85,5 +85,69 @@
       "new data directories",
       "valid symlink parent"
     ]
-  }
+  },
+  "subsequent_releases": [
+    {
+      "date": "2026-11-16",
+      "version": "0.6.0",
+      "schema": 6,
+      "scope": "Source organization; synthetic fixtures and aggregate results only",
+      "pytest": {
+        "passed": 465,
+        "duration_seconds": 70.41,
+        "platform": "macOS arm64",
+        "python": "3.11.16"
+      },
+      "ruff": "passed",
+      "mypy": {
+        "passed": true,
+        "application_files": 32
+      },
+      "node_transport_tests": {
+        "passed": 17
+      },
+      "browser_report": "browser-workflow.json",
+      "package_content": {
+        "runtime_files_match": 44,
+        "wheel_sha256": "5a5fc02eb575ced9ad5ccb1e0bbf2c326556778b09f984eb228c5682dfe2c549",
+        "license_expression": "Apache-2.0",
+        "license_notice_included": true,
+        "private_data_included": false
+      },
+      "clean_environment_install": {
+        "status": "passed",
+        "synthetic_inputs_only": true
+      },
+      "schema_5_backup_restore": "passed",
+      "installer": {
+        "status": "passed",
+        "version": "0.6.0",
+        "github_archive": false,
+        "fresh_install": true,
+        "repeat_install": true,
+        "data_and_permissions_preserved": true,
+        "unrelated_config_preserved": true,
+        "uninstall_keeps_data": true,
+        "tool_count": 28,
+        "entrypoints": [
+          {
+            "type": "global"
+          },
+          {
+            "type": "thread"
+          }
+        ],
+        "desktop_render_observed": false
+      },
+      "github_ci": {
+        "status": "pending",
+        "workflow": ".github/workflows/ci.yml"
+      },
+      "public_tree": {
+        "staged_files": 161,
+        "credential_or_personal_path_findings": 0,
+        "documentation_links": "passed"
+      }
+    }
+  ]
 }

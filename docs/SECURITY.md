@@ -1,6 +1,6 @@
 # 当前安全边界
 
-更新：2026-11-16。版本 0.5.3 / schema 5。测试与接入状态见 [EVALUATION.md](EVALUATION.md)。
+更新：2026-11-16。版本 0.6.0 / schema 6。测试与接入状态见 [EVALUATION.md](EVALUATION.md)。
 
 安装器从固定的 GitHub 标签取得源码，从 uv 官方渠道准备工具和 Python，再按锁文件
 安装应用依赖。程序、插件注册和研究资料使用分开的本机目录；启动 MCP 时直接使用已安装
