@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-16",
+  "version": "0.5.2",
+  "schema": 5,
+  "scope": "Public source preparation; synthetic fixtures and aggregate results only",
+  "pytest": {
+    "passed": 429,
+    "duration_seconds": 54.46,
+    "platform": "macOS arm64",
+    "python": "3.11.16"
+  },
+  "ruff": "passed",
+  "mypy": {
+    "passed": true,
+    "application_files": 32
+  },
+  "node_transport_tests": {
+    "passed": 16
+  },
+  "browser_report": "browser-workflow.json",
+  "package_content": {
+    "license_expression": "Apache-2.0",
+    "license_notice_included": true,
+    "runtime_files_match": 43,
+    "private_data_included": false,
+    "wheel_sha256": "f07b76ca500192aab72ad9bb08970bda0880d029fadd21b90365b1e07755af2a"
+  },
+  "public_tree": {
+    "credential_or_personal_path_findings": 0,
+    "private_materials_excluded": true,
+    "png_metadata_empty": 6,
+    "documentation_links": "passed",
+    "staged_files": 154
+  },
+  "clean_environment_install": {
+    "status": "passed",
+    "scope": [
+      "source import",
+      "Chinese search",
+      "PDF page image",
+      "evidence and output revisions",
+      "backup and restore",
+      "HTTP upload",
+      "stdio MCP Apps resource"
+    ],
+    "synthetic_inputs_only": true,
+    "application_network_mode": "off"
+  },
+  "github_ci": {
+    "status": "not_run",
+    "workflow": ".github/workflows/ci.yml"
+  }
+}

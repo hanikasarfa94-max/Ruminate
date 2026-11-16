@@ -1,0 +1,35 @@
+name: Bug report / 问题反馈
+description: Report a reproducible problem in Ruminate.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        English or Chinese is welcome. For vulnerabilities, use SECURITY.md.
+        Share a minimal example and remove private documents, tokens and local account paths.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / 问题
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Include a small synthetic input if needed.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 环境
+      description: Ruminate version, OS, Python and AI host/version (if relevant).
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / 日志
+      render: text

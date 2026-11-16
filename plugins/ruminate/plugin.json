@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ruminate",
+  "version": "0.5.2",
+  "description": "Keep research sources, revisit useful questions, and build cited drafts locally.",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Ruminate",
+        "shortDescription": "收集资料、回看想法，整理有引用的研究输出",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "brandColor": "#244C3E",
+        "defaultPrompt": [
+          "打开 Ruminate 工作台。",
+          "把这份资料收进 Ruminate，找出值得继续研究的问题。",
+          "看看今天有哪些值得重新思考的问题。",
+          "用已有资料整理一份有引用的研究提纲。"
+        ],
+        "logo": "./assets/ruminate-light.png",
+        "logoDark": "./assets/ruminate-dark.png",
+        "composerIcon": "./assets/ruminate-composer-light.png",
+        "composerIconDark": "./assets/ruminate-composer-dark.png"
+      }
+    }
+  }
+}

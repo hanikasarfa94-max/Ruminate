@@ -1,0 +1,6 @@
+# Keep binary fixtures and artwork byte for byte.
+*.pdf binary
+*.png binary
+
+# The format-1 golden file preserves historical output, including line-end spaces.
+tests/fixtures/output_v1.md -whitespace

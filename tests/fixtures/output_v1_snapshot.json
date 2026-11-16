@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "project": {
+    "title": "Synthetic legacy outline",
+    "kind": "research_note",
+    "target_audience": "Researchers",
+    "goal": "Check preserved citations"
+  },
+  "version": 1,
+  "created_at": "2026-01-01T00:00:00+00:00",
+  "claims": [
+    {
+      "classification": "supported",
+      "statement": "A saved source contains this statement.",
+      "claim_kind": "source_assertion",
+      "origin": "human",
+      "claim_id": "clm_legacy",
+      "evidence": [
+        {
+          "blob_path": "blobs/aa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "page": 1,
+          "section": null,
+          "locator": {
+            "type": "pdf_page",
+            "page": 1
+          },
+          "quote": "A short synthetic quotation.",
+          "title": "Synthetic source",
+          "version_id": "ver_legacy",
+          "block_id": "blk_legacy",
+          "start_char": 0,
+          "end_char": 28,
+          "relation": "supports",
+          "canonical_uri": "https://example.org/source"
+        }
+      ]
+    },
+    {
+      "classification": "needs_verification",
+      "statement": "Which evidence should be added next?",
+      "claim_kind": "question",
+      "origin": "host_model",
+      "claim_id": "clm_question",
+      "evidence": []
+    }
+  ]
+}

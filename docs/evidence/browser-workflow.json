@@ -1,0 +1,29 @@
+{
+  "tested_on": "2026-11-16",
+  "version": "0.5.2",
+  "fixture_scope": "Synthetic documents and a disposable test store",
+  "host": "local MCP Apps protocol test host (not Codex)",
+  "transport": "opaque iframe postMessage → real stdio MCP",
+  "topic_created": true,
+  "file_uploaded": true,
+  "exact_unicode_quote": true,
+  "inline_details_and_back": true,
+  "search_and_topic_preserved": true,
+  "host_model_suggestions_in_pending": 3,
+  "postpone_useful_dismiss_saved": true,
+  "draft_and_citation_navigation": true,
+  "pdf_image_rendered": true,
+  "markdown_export": true,
+  "host_discussion_draft": true,
+  "context_tracks_selection_and_back": true,
+  "removed_context_respected": true,
+  "thoughts_default": true,
+  "custom_select_keyboard_and_modal": true,
+  "narrow_viewport": {
+    "width": 390,
+    "scroll": 390
+  },
+  "dark_host_theme": true,
+  "iframe_network_requests": [],
+  "javascript_errors": []
+}
