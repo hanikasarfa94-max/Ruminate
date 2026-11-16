@@ -1,11 +1,19 @@
 # Changelog
 
 This log describes user-visible changes. Versions before the public repository
-were local development milestones. The current source version is 0.5.2; this file
-does not imply a PyPI package or a GitHub release has been published.
+were local development milestones. The current source version is 0.5.3.
+GitHub tags distribute source; there is no PyPI publication.
 
 ## Unreleased
 
+## 0.5.3 — 2026-11-16
+
+- One-command GitHub installation into the Codex plugin library on macOS / Linux.
+  Prepares uv, managed Python and locked dependencies without shell profile edits.
+- Verifies the actual installed plugin's MCP ownership, workspace entrypoints and
+  HTML resource before reporting success. Supports desktop-bundled Codex CLI paths.
+- Updates retain the research data path and scoped permissions; failed registration
+  restores the prior plugin wiring. Added setup, update and removal instructions.
 - Reject cyclic configured paths consistently on Python 3.13 and newer, while
   allowing new data directories that have not yet been created.
 - Apache 2.0 license, contributor and security documentation, bilingual README,

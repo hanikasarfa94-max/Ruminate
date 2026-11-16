@@ -15,7 +15,7 @@ Ruminate 是一个本地优先的研究工作台，通过 MCP 和 Skills 接入 
 资料、引用、想法和输出保存在你自己的电脑上，阅读与推理由现有 AI 宿主完成。
 内核无需模型 API Key、云数据库或其他知识管理软件。
 
-当前源码版本 **0.5.2**，处于早期开发阶段。请按下方步骤从源码安装；
+当前版本 **0.5.3**，处于早期开发阶段，可从 GitHub 一条命令安装到个人插件栏。
 PyPI 包及公共插件市场发布尚未提供。Codex 插件工作台已完成实际验收，
 不同客户端的支持范围见[兼容性记录](docs/COMPATIBILITY.md)。
 
@@ -31,7 +31,23 @@ PyPI 包及公共插件市场发布尚未提供。Codex 插件工作台已完成
 自动反刍建议进入 **想法 → 待回看**；定时任务需在自己的 Codex 客户端中配置，
 见[自动反刍](docs/AUTO_REFLECTION.md)。
 
-## 快速开始
+## 安装到 Codex 插件栏
+
+安装好 Codex 桌面客户端后，在终端执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hanikasarfa94-max/Ruminate/main/install.sh | bash
+```
+
+安装器自动准备 Python 和依赖、注册插件，并检查工作台能否通过 Codex 加载。
+完成后重新打开 Codex，进入 **插件 → Ruminate → 打开插件**。
+不需要预装 Python、GitHub 登录或 API Key；macOS 可直接使用桌面应用自带的 CLI。
+
+再次运行同一命令即可更新，研究资料会保留。
+自定义路径、卸载及已有开发版的迁移见[安装指南](docs/INSTALL.md)。
+支持 macOS / Linux；插件栏和内嵌页面需要宿主支持。
+
+## 从源码开发或使用 CLI
 
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/getting-started/installation/)
 和支持 FTS5 的 SQLite。macOS arm64 已实测；Linux Python 3.11 / 3.13 已通过 CI。
@@ -56,26 +72,8 @@ uv run ruminate search '证据' --topic demo
 也可运行 `uv run python scripts/smoke_p2.py`，在临时资料库里体验从多源证据、
 反刍反馈到有引用输出的完整流程；结束后自动清理测试数据。
 
-## 安装到 Codex 插件栏
-
-在项目目录执行，替换为自己的资料库路径：
-
-```bash
-uv run python scripts/register_project_plugin.py --plugin-mcp --data-dir /absolute/path/to/private-data
-uv run python scripts/register_project_plugin.py --apply
-```
-
-再在项目外登记本地插件来源并安装：
-
-```bash
-cd /tmp
-codex plugin marketplace add /absolute/path/to/Ruminate --json
-codex plugin add ruminate@ruminate-local --json
-```
-
-重新进入插件页打开工作台，或在对话中说“打开 Ruminate 工作台”。
-界面通过 MCP Apps 内嵌，使用宿主桥读写本地资料，不需要另启网页服务器。
-生成的本机配置由 Git 忽略。更新、独立 MCP 配置和排查步骤见[安装说明](docs/CODEX_MCP_UI.md)。
+开发中需要将插件指向当前源码时，见[开发版插件注册](docs/CODEX_MCP_UI.md)。
+正式安装的工作台通过 MCP Apps 内嵌，不需要另启网页服务器。
 
 如果只想预览页面，运行 `uv run ruminate ui`，打开终端显示的本地地址即可。
 CLI 和 MCP 使用同一套应用逻辑；不支持内嵌界面的客户端仍可使用工具。
@@ -95,7 +93,7 @@ Linux 为 `$XDG_DATA_HOME/ruminate/` 或 `~/.local/share/ruminate/`。
 | 文档 | 内容 |
 | --- | --- |
 | [使用指南](docs/USAGE.md) / [界面操作](docs/GUI.md) | 导入、检索、反刍、输出和备份 |
-| [插件安装](docs/CODEX_MCP_UI.md) / [Skills](docs/P3_PLUGIN.md) | Codex 接入与工作流 |
+| [插件安装](docs/INSTALL.md) / [开发接入](docs/CODEX_MCP_UI.md) / [Skills](docs/P3_PLUGIN.md) | Codex 接入与工作流 |
 | [架构](docs/ARCHITECTURE.md) / [技术决策](docs/DECISIONS.md) | 模块、存储和证据模型 |
 | [测试](docs/TESTING.md) / [验收记录](docs/EVALUATION.md) | 可复现命令与实际结果 |
 | [功能范围](docs/KNOWN_LIMITATIONS.md) / [路线图](docs/ROADMAP.md) | 已有能力与后续方向 |

@@ -1,6 +1,6 @@
 # 当前功能范围
 
-版本 0.5.2 / schema 5，更新于 2026-11-16。测试与平台记录见 [EVALUATION.md](EVALUATION.md) 和 [COMPATIBILITY.md](COMPATIBILITY.md)。
+版本 0.5.3 / schema 5，更新于 2026-11-16。测试与平台记录见 [EVALUATION.md](EVALUATION.md) 和 [COMPATIBILITY.md](COMPATIBILITY.md)。
 
 ## 管理页与资料
 
@@ -21,6 +21,7 @@
 
 ## 运行与数据
 
+- GitHub 安装器支持 macOS / Linux，在本机注册个人插件来源；公共插件目录和 PyPI 尚未发布。插件栏和内嵌页面需要宿主支持；Linux 原生桌面界面尚未验收。
 - 已完成 macOS arm64 实测及 Linux Python 3.11 / 3.13 的 CI 与独立安装验证。文件导入依赖 POSIX；Windows 尚未提供对应实现。
 - URL 导入支持公开 HTTP/HTTPS 默认端口；HTML 以静态内容解析。登录页面、动态页面、代理及压缩响应暂不支持。网络与文件校验规则见 [SECURITY.md](SECURITY.md)。
 - 解析和页图渲染使用时间、CPU、输出与 RSS 预算。macOS 的 RSS 采样用于资源监测；它与操作系统内存隔离的范围不同。

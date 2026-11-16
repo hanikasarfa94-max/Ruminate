@@ -2,9 +2,15 @@
 
 Ruminate 从插件栏或对话中的 `open_workspace` 打开。页面通过 MCP Apps 读写本地资料库，CLI、插件和自动反刍使用同一套应用服务。
 
-当前版本为 0.5.2。界面资源为 `ui://ruminate/workspace-v0.5.1.html`，MIME 类型为 `text/html;profile=mcp-app`。资源版本表示前端资源的缓存键，可与仅更新图标的插件版本不同。
+当前版本为 0.5.3。界面资源为 `ui://ruminate/workspace-v0.5.1.html`，MIME 类型为 `text/html;profile=mcp-app`。资源版本表示前端资源的缓存键，可与仅更新安装流程的插件版本不同。
 
 ## 安装到个人插件栏
+
+日常使用请运行[一条命令安装](INSTALL.md)。它自动准备运行环境、登记
+`ruminate@ruminate`，并通过真实 Codex 协议检查工作台。下面的手工流程面向需要让插件
+直接使用当前源码的开发者，生成的插件 ID 为 `ruminate@ruminate-local`。
+
+## 开发版注册
 
 在项目目录安装依赖，并生成本机插件配置：
 
@@ -29,7 +35,7 @@ codex plugin add ruminate@ruminate-local --json
 
 已有同名独立 MCP 配置时，注册脚本核对程序和资料库路径，备份后迁入插件，同时保留网络策略和文件范围。`--direct-mcp` 用于独立调试，会改为单独登记 MCP 服务；全局插件入口使用 `--plugin-mcp` 模式。
 
-## 更新与刷新
+## 开发版更新与刷新
 
 更新源码和依赖后，重新生成插件镜像并执行 `codex plugin add ruminate@ruminate-local --json`。关闭旧工作台，再从插件列表打开。客户端保留旧 MCP 进程时，退出并重新启动客户端以加载新版。
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ruminate-local"
-version = "0.5.2"
+version = "0.5.3"
 description = "Local-first evidence and research workflows for AI hosts"
 readme = "README.md"
 license = "Apache-2.0"
@@ -50,7 +50,7 @@ include = [
     "/.env.example", "/.python-version", "/AGENTS.md", "/README*.md",
     "/CONTRIBUTING.md", "/CHANGELOG.md", "/SECURITY.md", "/SUPPORT.md",
     "/CODE_OF_CONDUCT.md", "/LICENSE", "/NOTICE", "/THIRD_PARTY_NOTICES.md",
-    "/pyproject.toml", "/uv.lock",
+    "/pyproject.toml", "/uv.lock", "/install.sh",
 ]
 exclude = ["/docs/design", "/docs/evidence/private"]
 

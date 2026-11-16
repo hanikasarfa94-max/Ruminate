@@ -9,6 +9,7 @@ before expanding into more services.
 - Local source import, immutable versions, exact locators and full-text search.
 - Claims and evidence links, review feedback, cited drafts and backup/restore.
 - CLI, stdio MCP, four skills and an embedded Ideas / Sources / Outputs workspace.
+- One-command GitHub installer with local runtime setup, updates and host checks.
 - Page rendering for host vision and a workflow for scheduled review suggestions.
 
 ## Next

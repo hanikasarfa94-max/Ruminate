@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ruminate import __version__
 from ruminate.application import Application
 from ruminate.config import Config
 
@@ -50,7 +51,10 @@ p.wait()
 """
 
 
-async def run(*, installed_plugin: bool = False) -> dict[str, Any]:
+async def run(
+    *, installed_plugin: bool = False, codex: str | None = None,
+    marketplace_path: Path | None = None,
+) -> dict[str, Any]:
     report: dict[str, Any] = {
         "checked_at": datetime.now(UTC).isoformat(),
         "status": "BLOCKED",
@@ -61,7 +65,7 @@ async def run(*, installed_plugin: bool = False) -> dict[str, Any]:
         "mode": "installed_plugin" if installed_plugin else "direct_mcp",
         "working_directory": "temporary directory outside the project",
     }
-    codex = shutil.which("codex")
+    codex = codex or shutil.which("codex")
     if codex is None:
         report["reason"] = "codex not available on PATH"
         return report
@@ -125,7 +129,7 @@ async def run(*, installed_plugin: bool = False) -> dict[str, Any]:
             result = await send(
                 "initialize",
                 {
-                    "clientInfo": {"name": "ruminate_ui_probe", "version": "0.5.2"},
+                    "clientInfo": {"name": "ruminate_ui_probe", "version": __version__},
                     "capabilities": {
                         "experimentalApi": True,
                         "extensions": {"io.modelcontextprotocol/ui": {"mimeTypes": [MIME]}},
@@ -137,7 +141,9 @@ async def run(*, installed_plugin: bool = False) -> dict[str, Any]:
             await send("initialized", {})
             if installed_plugin:
                 details = await send("plugin/read", {
-                    "marketplacePath": str(ROOT / ".agents/plugins/marketplace.json"),
+                    "marketplacePath": str(
+                        marketplace_path or ROOT / ".agents/plugins/marketplace.json"
+                    ),
                     "pluginName": "ruminate",
                 }, 10)
                 plugin = details["plugin"]
@@ -223,8 +229,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path)
     parser.add_argument("--installed-plugin", action="store_true")
+    parser.add_argument("--codex", help="Codex executable, including the desktop-bundled CLI")
+    parser.add_argument("--marketplace-path", type=Path, help="Installed marketplace.json path")
     args = parser.parse_args()
-    result = asyncio.run(run(installed_plugin=args.installed_plugin))
+    result = asyncio.run(run(installed_plugin=args.installed_plugin, codex=args.codex,
+                             marketplace_path=args.marketplace_path))
     rendered = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

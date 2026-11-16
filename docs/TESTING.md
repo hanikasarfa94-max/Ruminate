@@ -20,12 +20,34 @@ CI 在 Linux Python 3.11 / 3.13 和 macOS Python 3.11 上执行上述检查及 w
 ## 独立安装
 
 ```bash
-uv run python scripts/smoke_wheel.py dist/ruminate_local-0.5.2-py3-none-any.whl
+uv run python scripts/smoke_wheel.py dist/ruminate_local-0.5.3-py3-none-any.whl
 ```
 
 该脚本在源码目录外建立临时环境，安装 wheel，检查导入、检索、PDF 页图、认知输出、
 备份恢复、HTTP 与真实 stdio MCP。依赖安装可能访问包源，应用流程使用离线合成材料。
 安装默认等待 300 秒；慢网络可加 `--install-timeout 600`。这不改变应用自身的请求限额。
+
+## 插件安装器
+
+`tests/test_installer.py` 覆盖路径含空格、默认参数、旧版 Codex 拒绝、重复安装、
+本机数据隔离、已有权限保留、服务冲突及安装失败后的恢复。
+`bash -n install.sh` 检查入口脚本语法。macOS 自带 Bash 3.2 也在验证范围内。
+
+真实安装检查使用临时 Codex 配置、独立程序目录与合成资料，执行
+`bash install.sh --source "$PWD"` 并指定测试用程序和资料路径。
+随后通过 Codex app-server 检查新插件，导入合成材料，再次安装并核对资料仍可检索。
+测试进程通过自己的 `CODEX_HOME` 指向临时配置，不修改现有客户端配置。
+结果记录在 [EVALUATION.md](EVALUATION.md)；Linux CI 中的安装器单元测试不代表
+对 Linux 原生插件栏的实际渲染验收。
+
+可以用真实 Codex CLI 重跑上述流程，无需登录或模型调用：
+
+```bash
+uv run python scripts/smoke_install.py --codex /path/to/codex --output .local/install-check.json
+# 标签发布后，增加 --github 验证 GitHub 下载入口
+```
+
+它还验证卸载插件后研究资料依然可用；整个测试使用临时目录，结束后自动清理。
 
 ## 浏览器工作流
 

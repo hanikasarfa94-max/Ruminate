@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ruminate",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Keep research sources, revisit useful questions, and build cited drafts locally.",
   "extensions": {
     "com.openai": {

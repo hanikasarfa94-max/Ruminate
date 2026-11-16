@@ -1,6 +1,6 @@
 # Ruminate 本地认知内核架构
 
-当前代码版本 0.5.2，schema 5。主路径为：
+当前代码版本 0.5.3，schema 5。主路径为：
 
 `MCP Apps 管理页 / CLI / MCP → Application → 导入、知识、反刍、输出与备份服务 → SQLite + CAS blobs`。
 
@@ -90,3 +90,8 @@ OutputRevision 将选择的主张、证据关系、来源版本、片段与 loca
 输出阅读版根据不可变 snapshot 呈现，原有 Markdown 和历史版本校验保持不变。浏览器下载提供 Markdown；含原件相对链接的完整本地输出仍可通过 CLI export 获取。
 
 插件位于 `plugins/ruminate`，包含四套 Skills 和 MCP 配置。默认 MCP 只读集合保持兼容；插件显式启用写工具，具体安装与验证边界见 [P3_PLUGIN.md](P3_PLUGIN.md)。本地 GUI 与 ChatGPT MCP Apps iframe 是独立接入路径。
+
+`install.sh` 与 `scripts/install_codex.py` 负责分发：独立的版本化 Python 环境、
+本机 marketplace、通过 Codex CLI 注册及真实 app-server 验证。MCP 启动配置直接指向
+已安装 Python；运行时不依赖源码目录、shell PATH 或在线依赖解析。
+更新沿用资料目录和访问范围，失败时恢复插件配置；研究数据库由应用自己的迁移管理。
