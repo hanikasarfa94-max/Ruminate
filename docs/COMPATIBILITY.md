@@ -6,7 +6,7 @@
 | 能力 | 当前验证结果 |
 | --- | --- |
 | macOS arm64 / Python 3.11 | 应用、CLI、MCP、备份恢复及构建检查通过 |
-| Linux / Python 3.11、3.13 | CI 已配置；运行结果以 GitHub Actions 为准 |
+| Linux / Python 3.11、3.13 | 应用、静态检查、桥接测试、构建及独立 wheel 安装已通过 GitHub Actions |
 | Windows 文件导入 | 暂不支持，安全文件访问依赖 POSIX API |
 | SQLite FTS5 | 已验证中英文检索；中文使用单字/双字 n-gram 索引 |
 | PDF / Markdown / TXT / 静态 HTML | 合成材料已覆盖导入、去重、版本及原文定位 |

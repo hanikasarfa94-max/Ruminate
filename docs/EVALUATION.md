@@ -20,7 +20,10 @@
 
 本轮发布检查将结果记录在 [release-checks.json](evidence/release-checks.json)，
 包含离线测试、静态检查、包构建、安装验证和公开文件检查。
-GitHub Actions 的运行结果以仓库 Actions 页为准。
+初次跨版本 CI 发现 Python 3.13 非严格路径解析不再抛出循环链接异常；已修复配置校验，
+并扩展存储路径与授权范围的回归测试。修复后本地 432 项测试通过（54.91 秒），
+Ruff、Mypy 和独立 wheel 安装均通过。Linux Python 3.11、Linux Python 3.13、macOS Python 3.11 的远程 CI 均通过，
+包含各环境中的构建与独立安装。对应提交和运行链接见上述 JSON 记录。
 
 ## 覆盖范围
 

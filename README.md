@@ -34,7 +34,7 @@ PyPI 包及公共插件市场发布尚未提供。Codex 插件工作台已完成
 ## 快速开始
 
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/getting-started/installation/)
-和支持 FTS5 的 SQLite。macOS arm64 已实测；Linux 验证状态见兼容性记录。
+和支持 FTS5 的 SQLite。macOS arm64 已实测；Linux Python 3.11 / 3.13 已通过 CI。
 当前文件导入依赖 POSIX，Windows 尚未支持。
 
 ```bash

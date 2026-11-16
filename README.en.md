@@ -27,8 +27,7 @@ is configured in the user's own host; installing Ruminate does not create a task
 ## Install
 
 Requirements: Python 3.11+, [uv](https://docs.astral.sh/uv/), and SQLite with FTS5.
-macOS arm64 has been tested. Linux validation is tracked in the compatibility
-report. File ingestion currently requires POSIX and is unavailable on Windows.
+macOS arm64 has been tested; Linux Python 3.11 and 3.13 have passed CI. File ingestion currently requires POSIX and is unavailable on Windows.
 
 ```bash
 git clone https://github.com/hanikasarfa94-max/Ruminate.git

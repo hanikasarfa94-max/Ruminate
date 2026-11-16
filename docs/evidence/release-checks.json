@@ -4,8 +4,8 @@
   "schema": 5,
   "scope": "Public source preparation; synthetic fixtures and aggregate results only",
   "pytest": {
-    "passed": 429,
-    "duration_seconds": 54.46,
+    "passed": 432,
+    "duration_seconds": 54.91,
     "platform": "macOS arm64",
     "python": "3.11.16"
   },
@@ -23,7 +23,7 @@
     "license_notice_included": true,
     "runtime_files_match": 43,
     "private_data_included": false,
-    "wheel_sha256": "f07b76ca500192aab72ad9bb08970bda0880d029fadd21b90365b1e07755af2a"
+    "wheel_sha256": "349f1c1533dea94009d569df62e0cacacec9ff6a8feeefb035bebff48283b225"
   },
   "public_tree": {
     "credential_or_personal_path_findings": 0,
@@ -47,7 +47,43 @@
     "application_network_mode": "off"
   },
   "github_ci": {
-    "status": "not_run",
-    "workflow": ".github/workflows/ci.yml"
+    "status": "passed",
+    "workflow": ".github/workflows/ci.yml",
+    "run_url": "https://github.com/hanikasarfa94-max/Ruminate/actions/runs/43842487719",
+    "checked_commit": "5eedd6616112ba9414dfd74a273b7f4727840651",
+    "jobs": [
+      {
+        "name": "ubuntu-latest / Python 3.11",
+        "status": "passed"
+      },
+      {
+        "name": "ubuntu-latest / Python 3.13",
+        "status": "passed"
+      },
+      {
+        "name": "macos-latest / Python 3.11",
+        "status": "passed"
+      }
+    ],
+    "checks": [
+      "public tree",
+      "pytest",
+      "ruff",
+      "mypy",
+      "JavaScript transport",
+      "build",
+      "clean wheel installation"
+    ]
+  },
+  "checked_commit": "5eedd6616112ba9414dfd74a273b7f4727840651",
+  "python_313_path_regression": {
+    "status": "passed",
+    "cases": [
+      "cyclic storage",
+      "cyclic authorized root",
+      "cyclic ancestor with missing tail",
+      "new data directories",
+      "valid symlink parent"
+    ]
   }
 }
