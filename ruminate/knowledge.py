@@ -456,9 +456,10 @@ class KnowledgeService:
             return [
                 _summary(connection, row)
                 for row in connection.execute(
-                    "SELECT * FROM claims WHERE topic_id=? AND status='candidate' "
+                    "SELECT * FROM claims WHERE (topic_id=? OR id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) AND status='candidate' "
                     "ORDER BY created_at,id LIMIT ?",
-                    (topic["id"], limit),
+                    (topic["id"], topic["id"], limit),
                 )
             ]
 
@@ -575,9 +576,10 @@ class KnowledgeService:
         with self.store.read() as connection:
             topic = resolve_topic(connection, topic_id)
             rows = connection.execute(
-                "SELECT * FROM claims WHERE topic_id=? AND status='candidate' "
+                "SELECT * FROM claims WHERE (topic_id=? OR id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) AND status='candidate' "
                 "ORDER BY created_at,id LIMIT ?",
-                (topic["id"], max_claims),
+                (topic["id"], topic["id"], max_claims),
             ).fetchall()
             claims = [_summary(connection, row) for row in rows]
             for claim in claims:
@@ -596,8 +598,9 @@ class KnowledgeService:
                     claim["evidence_refs"].append(item)
                 claim["evidence_refs_truncated"] = claim["evidence_count"] > len(refs)
             count = connection.execute(
-                "SELECT COUNT(*) FROM claims WHERE topic_id=? AND status='candidate'",
-                (topic["id"],),
+                "SELECT COUNT(*) FROM claims WHERE (topic_id=? OR id IN "
+                "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) AND status='candidate'",
+                (topic["id"], topic["id"]),
             ).fetchone()[0]
             beliefs: list[dict[str, Any]] = []
             belief_counts: dict[str, int] = {}
@@ -621,11 +624,13 @@ class KnowledgeService:
                     "v.published_at,v.retrieved_at FROM source_versions v "
                     "JOIN sources s ON s.id=v.source_id WHERE v.id IN ("
                     "SELECT e.version_id FROM claim_evidence e JOIN claims c ON c.id=e.claim_id "
-                    "WHERE c.topic_id=? AND c.status='candidate' UNION "
+                    "WHERE (c.topic_id=? OR c.id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) "
+                    "AND c.status='candidate' UNION "
                     "SELECT s.current_version_id FROM sources s JOIN source_topics st "
                     "ON s.id=st.source_id WHERE st.topic_id=?) "
                     "ORDER BY v.retrieved_at DESC,v.id LIMIT 10",
-                    (topic["id"], topic["id"]),
+                    (topic["id"], topic["id"], topic["id"]),
                 )
             ]
             projects = [

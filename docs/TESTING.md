@@ -20,7 +20,7 @@ CI 在 Linux Python 3.11 / 3.13 和 macOS Python 3.11 上执行上述检查及 w
 ## 独立安装
 
 ```bash
-uv run python scripts/smoke_wheel.py dist/ruminate_local-0.6.0-py3-none-any.whl
+uv run python scripts/smoke_wheel.py dist/ruminate_local-0.7.0-py3-none-any.whl
 ```
 
 该脚本在源码目录外建立临时环境，安装 wheel，检查导入、检索、PDF 页图、认知输出、
@@ -68,6 +68,9 @@ RUMINATE_PLAYWRIGHT_MODULE="$PWD/.local/ui-test/node_modules/playwright" node sc
 宿主脚本使用上述独立测试资料库，经真实 stdio MCP 连接 iframe。请选择未使用的测试目录，测试完成后停止宿主进程。
 结果覆盖上传、引用、建议、反馈、输出、窄窗口、主题改名、资料名与分类编辑、嵌套新建主题、历史引用和对话上下文。
 这是协议验收，不是原生 Codex 桌面自动点击。
+
+同一测试宿主还可运行 `node scripts/smoke_thinking_ui.cjs http://127.0.0.1:8767 .local/thinking-browser`。
+它验证引导和双向关联、个人思考、对话输入框、活动日期、分类采用与撤回，以及移动端深色布局。
 
 ## 真实宿主检查
 

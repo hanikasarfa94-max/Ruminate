@@ -1,6 +1,6 @@
 # Ruminate 本地认知内核架构
 
-当前代码版本 0.6.0，schema 6。主路径为：
+当前版本 0.7.0，schema 7。主路径为：
 
 `MCP Apps 管理页 / CLI / MCP → Application → 导入、知识、反刍、输出与备份服务 → SQLite + CAS blobs`。
 
@@ -21,6 +21,8 @@
 | `persistence/common.py` | 认知服务共享事务、参数校验、审计、主题解析与请求幂等。 |
 | `knowledge.py` | Topic / Claim / ClaimEvidence / UserBelief / BeliefRelation 与有范围限制的研究上下文。 |
 | `management.py` | 资料显示名称与主题分类的幂等编辑；同一快照内查询资料、想法及确认观点、输出，提供稳定分页与真实计数。到期回看不受主动推送额度限制。 |
+| `thinking.py` | 有引用的引导修订、个人思考、双向关联及真实用户活动聚合。 |
+| `organization.py` | 宿主分类建议、追加归类与撤回；保留人工分类归属。 |
 | `review.py` | 确定性候选、可解释评分、只读队列预览、显式曝光及人工反馈。 |
 | `outputs.py` | 五种模板、不可变修订、原文引用校验、新证据影响分析、Markdown / JSON 导出。 |
 | `providers.py` / `enrichment.py` | NoLLM / Mock 提议接口、快照输入、协作超时、租约和可恢复任务；不自动写入认知结论。 |
@@ -32,6 +34,8 @@
 ## 存储与事务
 
 migration 001 保存应用身份、任务和审计表；002 增加来源、版本、块、索引与导入快照；003 增加独立视觉记录；004 增加认知关系、反刍与输出修订、幂等请求；005 增加 enrichment 输入与结果快照；006 增加 `sources.title_is_custom`，区分用户资料名与随版本更新的原始标题。不要修改已使用的迁移文件；旧版本通过新增迁移演进。
+
+migration 007 追加反刍引导、个人思考、分类建议和想法的次级主题，并记录自动添加的资料分类归属，便于撤回时保留手动选择。
 
 原始字节存入 `blobs/<sha256-prefix>/<sha256>`，临时文件写完并 fsync 后原子替换。读取校验路径形状与内容 hash。数据库事务共同提交版本、块、FTS、主题、任务结果和审计记录；失败不留下半套已入库证据。
 
@@ -95,3 +99,5 @@ OutputRevision 将选择的主张、证据关系、来源版本、片段与 loca
 本机 marketplace、通过 Codex CLI 注册及真实 app-server 验证。MCP 启动配置直接指向
 已安装 Python；运行时不依赖源码目录、shell PATH 或在线依赖解析。
 更新沿用资料目录和访问范围，失败时恢复插件配置；研究数据库由应用自己的迁移管理。
+
+思考工作台的数据语义、交互和参考来源见 [THINKING_WORKSPACE.md](THINKING_WORKSPACE.md)。

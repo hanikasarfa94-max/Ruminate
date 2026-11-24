@@ -363,7 +363,8 @@ class SourceRepository:
                 "INSERT INTO topics(id,slug,name) VALUES(?,?,?)", (topic_id, topic, topic)
             )
         connection.execute(
-            "INSERT OR IGNORE INTO source_topics(source_id,topic_id) VALUES(?,?)",
+            "INSERT INTO source_topics(source_id,topic_id) VALUES(?,?) "
+            "ON CONFLICT(source_id,topic_id) DO UPDATE SET suggestion_id=NULL",
             (source_id, topic_id),
         )
         return topic_id

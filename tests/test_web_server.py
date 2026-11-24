@@ -338,3 +338,28 @@ def test_management_http_matches_application_and_does_not_write(browser: Browser
     assert browser.get("/api/state") == before
     status, _, _ = browser.request("/api/management?view=thoughts&status=invalid")
     assert status == 400
+
+
+def test_http_thinking_notes_and_classification_routes(browser: Browser) -> None:
+    topic = browser.post("/api/topics", name="Thinking", request_id="thinking-topic")
+    other = browser.post("/api/topics", name="Memory", request_id="thinking-memory")
+    claim = browser.post("/api/claims", topic_id=topic["topic_id"], statement="Which conditions?",
+                         claim_kind="question", request_id="thinking-claim")
+    cid = claim["claim_id"]
+    baseline = browser.get("/api/activity")["total"]
+    note = browser.post("/api/reflection-notes", claim_id=cid, text="A concrete counterexample.",
+                        request_id="thinking-note")
+    assert note["origin"] == "human"
+    assert browser.get("/api/thinking?claim_id=" + cid)["notes"][0] == note
+    assert browser.get("/api/activity")["total"] == baseline + 1
+    proposed = browser.server.app.organization.suggest(
+        target_kind="claim", target_id=cid, topic_id=other["topic_id"],
+        rationale="It concerns remembering conditions.", request_id="http-proposal",
+    )
+    assert browser.get("/api/topic-suggestions")["items"][0]["status"] == "pending"
+    browser.post("/api/topic-suggestions/decide", suggestion_id=proposed["id"], decision="apply",
+                 request_id="http-apply")
+    assert browser.get("/api/management?view=thoughts&topic=" + other["topic_id"])["total"] == 1
+    browser.post("/api/topic-suggestions/decide", suggestion_id=proposed["id"], decision="revert",
+                 request_id="http-undo")
+    assert browser.get("/api/activity")["total"] == baseline + 1

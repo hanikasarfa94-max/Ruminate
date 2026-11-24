@@ -184,6 +184,65 @@
         ],
         "desktop_render_observed": false
       }
+    },
+    {
+      "date": "2026-11-24",
+      "version": "0.7.0",
+      "schema": 7,
+      "scope": "Local prerelease verification; synthetic fixtures and aggregate results only",
+      "pytest": {
+        "passed": 488,
+        "duration_seconds": 70.29,
+        "platform": "macOS arm64",
+        "python": "3.11.16"
+      },
+      "ruff": "passed",
+      "mypy": {
+        "passed": true,
+        "application_files": 34
+      },
+      "node_transport_tests": {
+        "passed": 18
+      },
+      "browser_report": "browser-workflow.json",
+      "package_content": {
+        "runtime_files_match": 47,
+        "license_expression": "Apache-2.0",
+        "license_notice_included": true,
+        "private_data_included": false,
+        "wheel_sha256": "e462efa761e804a15a308c1470c5e8af71639fd9b21b12fc0ac0646497eaae83"
+      },
+      "clean_environment_install": {
+        "status": "passed",
+        "synthetic_inputs_only": true,
+        "application_network_mode": "off"
+      },
+      "schema_5_and_6_backup_restore": "passed",
+      "installer": {
+        "status": "passed",
+        "version": "0.7.0",
+        "github_archive": false,
+        "fresh_install": true,
+        "repeat_install": true,
+        "data_and_permissions_preserved": true,
+        "unrelated_config_preserved": true,
+        "uninstall_keeps_data": true,
+        "tool_count": 34,
+        "entrypoints": [
+          {
+            "type": "global"
+          },
+          {
+            "type": "thread"
+          }
+        ],
+        "desktop_render_observed": false
+      },
+      "documentation_links": {
+        "status": "passed",
+        "relative_links": 118
+      },
+      "release_verification_url": "https://github.com/hanikasarfa94-max/Ruminate/releases/tag/v0.7.0"
     }
   ]
 }

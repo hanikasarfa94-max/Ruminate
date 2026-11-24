@@ -225,6 +225,16 @@ def validate_database(connection: sqlite3.Connection, *, allow_empty: bool = Fal
             required_columns.update(V5_COLUMNS)
         if version >= 6:
             required_columns["sources"] = V2_COLUMNS["sources"] | {"title_is_custom"}
+        if version >= 7:
+            required_columns.update({
+                "reflection_guides": {"id", "claim_id", "lens", "spark", "prompts_json",
+                                      "evidence_ids_json", "links_json", "origin", "created_at"},
+                "reflection_notes": {"id", "claim_id", "text", "origin", "created_at"},
+                "topic_suggestions": {"id", "target_kind", "target_id", "version_id", "topic_id",
+                                      "rationale", "origin", "status", "created_at", "updated_at"},
+                "claim_topics": {"claim_id", "topic_id", "suggestion_id"},
+                "source_topics": V2_COLUMNS["source_topics"] | {"suggestion_id"},
+            })
     for table, required in required_columns.items():
         # Table names are constants from this module, never caller-controlled input.
         columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}

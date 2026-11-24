@@ -1,6 +1,6 @@
 {
-  "tested_on": "2026-11-16",
-  "version": "0.6.0",
+  "tested_on": "2026-11-24",
+  "version": "0.7.0",
   "fixture_scope": "Synthetic documents and an isolated test store",
   "host": "local MCP Apps protocol test host (not Codex)",
   "transport": "opaque iframe postMessage → real stdio MCP",
@@ -30,5 +30,20 @@
   "source_renamed_and_reclassified": true,
   "nested_topic_creation": true,
   "title_reset": true,
-  "historical_citations_preserved": true
+  "historical_citations_preserved": true,
+  "thinking_workflow": {
+    "passed": true,
+    "checks": [
+      "grounded guide",
+      "human note",
+      "no HTML execution",
+      "current chat context",
+      "editable draft",
+      "backlinks",
+      "activity day",
+      "adopt and undo classification",
+      "mobile dark layout"
+    ],
+    "errors": []
+  }
 }

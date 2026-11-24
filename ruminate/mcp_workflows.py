@@ -277,3 +277,64 @@ def register_workflow_tools(server: MCPServer, app: Application) -> None:
             host=host,
             request_id=request_id,
         )
+
+    @server.tool(title="Read thinking notes and connections", annotations=read)
+    def get_thinking(claim_id: str, offset: int = 0) -> dict[str, Any]:
+        """Read the latest guide, human/model notes and explicitly reasoned backlinks."""
+        return _call(app.thinking.context, claim_id, offset=offset)
+
+    @server.tool(title="Save a reflection guide", annotations=write)
+    def save_reflection_guide(
+        claim_id: str,
+        lens: Literal["connection", "counterexample", "boundary", "tradeoff", "revisit"],
+        spark: str, prompts: list[str], evidence_ids: list[str],
+        links: list[dict[str, str]], request_id: str,
+    ) -> dict[str, Any]:
+        """After reading evidence, explain a specific tension or connection, then ask 1–3
+        progressive questions. Use evidence IDs on this claim. Links need claim_id and reason.
+        This appends a host-model guide; it never changes a claim or confirms a user belief.
+        """
+        return _call(app.thinking.save_guide, claim_id=claim_id, lens=lens, spark=spark,
+                     prompts=prompts, evidence_ids=evidence_ids, links=links, request_id=request_id)
+
+    @server.tool(title="Save a thinking note", annotations=write)
+    def save_reflection_note(
+        claim_id: str, text: str, request_id: str,
+        origin: Literal["human", "host_model"] = "host_model",
+    ) -> dict[str, Any]:
+        """Save a note. Use human only for the user's actual words; model writing stays
+        host_model. A note is a reflection, not a confirmed user belief.
+        """
+        return _call(app.thinking.save_note, claim_id=claim_id, text=text,
+                     origin=origin, request_id=request_id)
+
+    @server.tool(title="Suggest an additional topic", annotations=write)
+    def suggest_topic(
+        target_kind: Literal["source", "claim"], target_id: str, topic_id: str,
+        rationale: str, request_id: str, version_id: str | None = None,
+        auto_apply: StrictBool = False,
+    ) -> dict[str, Any]:
+        """After reading the content, recommend an existing topic with a concrete reason.
+        Sources require the current version_id. auto_apply adds a reversible classification
+        when automatic organization is authorized. Manual/primary topics stay intact.
+        Prior rejected suggestions are not recreated for the same content.
+        """
+        return _call(app.organization.suggest, target_kind=target_kind, target_id=target_id,
+                     topic_id=topic_id, rationale=rationale, version_id=version_id,
+                     auto_apply=auto_apply, request_id=request_id)
+
+    @server.tool(title="Browse topic suggestions", annotations=read)
+    def list_topic_suggestions(
+        status: str = "active", limit: int = 25, offset: int = 0,
+    ) -> dict[str, Any]:
+        """Read model classification reasons and status, with pagination."""
+        return _call(app.organization.list_suggestions, status=status, limit=limit, offset=offset)
+
+    @server.tool(title="Apply or undo a topic suggestion", annotations=write)
+    def decide_topic_suggestion(
+        suggestion_id: str, action: Literal["apply", "dismiss", "revert"], request_id: str,
+    ) -> dict[str, Any]:
+        """Apply/dismiss a pending recommendation, or undo an applied addition.
+        Undo preserves subsequent manual choices and the original topic.
+        """
+        return _call(app.organization.decide, suggestion_id, action, request_id=request_id)

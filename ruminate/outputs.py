@@ -294,10 +294,11 @@ class OutputService:
     ) -> list[dict[str, Any]]:
         if claim_ids is None:
             rows = connection.execute(
-                "SELECT * FROM claims WHERE topic_id=? AND status='candidate' "
+                "SELECT * FROM claims WHERE (topic_id=? OR id IN "
+                "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) AND status='candidate' "
                 "ORDER BY created_at,id "
                 "LIMIT 51",
-                (project["topic_id"],),
+                (project["topic_id"], project["topic_id"]),
             ).fetchall()
             if len(rows) > 50:
                 raise RuminateError("output_budget", "Select at most 50 claims explicitly")
@@ -305,8 +306,9 @@ class OutputService:
             rows = []
             for claim_id in claim_ids:
                 row = connection.execute(
-                    "SELECT * FROM claims WHERE id=? AND topic_id=? AND status='candidate'",
-                    (claim_id, project["topic_id"]),
+                    "SELECT * FROM claims WHERE id=? AND (topic_id=? OR id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?)) AND status='candidate'",
+                    (claim_id, project["topic_id"], project["topic_id"]),
                 ).fetchone()
                 if row is None:
                     raise RuminateError("claim_not_found", "Claim is unavailable in this topic")
@@ -338,6 +340,13 @@ class OutputService:
                 "status": row["status"],
                 "evidence": evidence,
             }
+            if row["topic_id"] != project["topic_id"]:
+                assignment = connection.execute(
+                    "SELECT suggestion_id FROM claim_topics WHERE claim_id=? AND topic_id=?",
+                    (row["id"], project["topic_id"]),
+                ).fetchone()
+                claim["topic_assignment"] = {"suggestion_id": assignment[0],
+                                             "topic_id": project["topic_id"]}
             claim["classification"] = _classification(claim)
             claims.append(claim)
         return claims
@@ -487,9 +496,22 @@ class OutputService:
                 if (
                     saved_claim is None
                     or any(claim[key] != saved_claim[key] for key in ("claim_kind", "origin"))
-                    or saved_claim["topic_id"] != snapshot["project"]["topic_id"]
                 ):
                     raise ValueError("Claim provenance mismatch")
+                if saved_claim["topic_id"] != snapshot["project"]["topic_id"]:
+                    assignment = claim.get("topic_assignment", {})
+                    if not isinstance(assignment, dict):
+                        raise ValueError("Invalid topic assignment")
+                    if (assignment.get("topic_id") != snapshot["project"]["topic_id"]
+                            or not connection.execute(
+                                "SELECT 1 FROM topic_suggestions WHERE id=? "
+                                "AND target_kind='claim' "
+                                "AND target_id=? AND topic_id=? "
+                                "AND status IN ('applied','reverted')",
+                                (assignment.get("suggestion_id"), claim["claim_id"],
+                                 snapshot["project"]["topic_id"]),
+                            ).fetchone()):
+                        raise ValueError("Claim topic assignment mismatch")
                 if _classification(claim) != claim["classification"]:
                     raise ValueError("Invalid classification")
                 for citation in claim["evidence"]:

@@ -177,6 +177,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._json({"token": self.server.token, "origin": self.server.url}, head=head)
             return
         direct: dict[str, ReadAction] = {
+            "/api/thinking": "thinking",
+            "/api/activity": "activity",
+            "/api/topic-suggestions": "topic_suggestions",
             "/api/management": "management",
             "/api/state": "state",
             "/api/topics": "topics",
@@ -238,6 +241,8 @@ class _Handler(BaseHTTPRequestHandler):
             "/api/topics": "create_topic",
             "/api/ingest/url": "capture_url",
             "/api/ingest/file": "upload_file",
+            "/api/reflection-notes": "save_reflection_note",
+            "/api/topic-suggestions/decide": "decide_topic_suggestion",
             "/api/claims": "record_claim",
             "/api/reviews/generate": "generate_reviews",
             "/api/reviews/present": "present_reviews",

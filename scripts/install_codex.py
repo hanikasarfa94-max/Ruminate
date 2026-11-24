@@ -25,6 +25,7 @@ PLUGIN_ID = "ruminate@ruminate"
 RUNTIME_ITEMS = (
     "ruminate", "plugins/ruminate", "pyproject.toml", "uv.lock", "README.md",
     "LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md",
+    "docs/AUTO_REFLECTION.md", "docs/auto-reflection-prompt.md", "docs/THINKING_WORKSPACE.md",
 )
 
 

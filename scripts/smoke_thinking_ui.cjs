@@ -1,0 +1,98 @@
+/* Thinking workflow through a real stdio MCP host and an opaque-origin iframe. */
+const fs = require("node:fs/promises");
+const path = require("node:path");
+const assert = require("node:assert/strict");
+const { chromium } = require(process.env.RUMINATE_PLAYWRIGHT_MODULE || "playwright");
+(async () => {
+  const base = process.argv[2] || "http://127.0.0.1:8767";
+  const output = path.resolve(process.argv[3] || ".local/thinking-browser");
+  await fs.mkdir(output, { recursive: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.RUMINATE_BROWSER_EXECUTABLE || undefined });
+  const page = await browser.newPage({ viewport: { width: 1180, height: 960 } });
+  const errors = []; page.on("pageerror", e => errors.push(String(e)));
+  const prefix = `thinking-${Date.now()}`;
+  let serial = 0;
+  const call = (name, args) => page.evaluate(async ({ name, args }) => {
+    const response = await fetch("/call", { method: "POST", headers: { "Content-Type": "application/json", "X-Harness-Token": token }, body: JSON.stringify({ name, arguments: args }) });
+    const result = await response.json();
+    if (!response.ok || result.isError) throw Error(JSON.stringify(result));
+    return result.structuredContent;
+  }, { name, args });
+  const write = async (action, params) => (await call("ui_write", { action, params: { ...params, request_id: `${prefix}-${++serial}` } })).data;
+  const read = async (action, params = {}) => (await call("ui_read", { action, params })).data;
+  try {
+    await page.goto(base);
+    const frame = page.frameLocator("iframe");
+    const child = page.frames().find(f => f.parentFrame());
+    await frame.locator(".thinking-activity").waitFor();
+    const baseline = await read("activity");
+    const topic = await write("create_topic", { name: "执行与判断" });
+    const other = await write("create_topic", { name: "记忆与反思" });
+    const source = await write("upload_file", { filename: "thinking.md", content_base64: Buffer.from("# 合成材料\n\n执行成功不等于判断可靠。反馈需要保留它发生的条件。").toString("base64"), topic: topic.topic_id });
+    const saved = await read("source", { source_id: source.source_id });
+    const block = saved.blocks[1];
+    const claims = [];
+    for (const statement of ["如果操作都正确，为什么结果仍不理想？", "经验什么时候会变成误导？"]) {
+      claims.push(await call("record_claim", { topic_id: topic.topic_id, statement, claim_kind: "question", block_id: block.block_id, relation: "mentions", request_id: `${prefix}-${++serial}` }));
+    }
+    const suggestion = await call("suggest_topic", { target_kind: "claim", target_id: claims[0].claim_id, topic_id: other.topic_id, rationale: "执行后的反馈也影响下一次判断，适合联系记忆。", auto_apply: true, request_id: `${prefix}-${++serial}` });
+    await call("suggest_topic", { target_kind: "source", target_id: source.source_id, version_id: source.version_id, topic_id: other.topic_id, rationale: "材料明确讨论了反馈的适用条件。", request_id: `${prefix}-${++serial}` });
+    await call("save_reflection_guide", { claim_id: claims[0].claim_id, lens: "connection", spark: "一份操作记录可以证明动作完成，却未必能说明判断正确。这也让“记住成功经验”变得不那么简单。", prompts: ["回想一次做对步骤却没得到好结果的经历：缺了哪一层判断？", "换一个场景，这条经验还成立吗？"], evidence_ids: [claims[0].evidence[0].evidence_id], links: [{ claim_id: claims[1].claim_id, reason: "两条想法都在追问成功经验的适用条件。" }], request_id: `${prefix}-${++serial}` });
+    await write("generate_reviews", { topic_id: topic.topic_id });
+    assert.equal((await read("activity")).total, baseline.total, "model work cannot fill the heatmap");
+    await child.evaluate(async () => { await refreshState(); await navigate("thoughts"); });
+    await frame.locator(".row-prompt").waitFor();
+    await page.screenshot({ path: path.join(output, "thinking-home.png"), fullPage: true, animations: "disabled" });
+    await frame.locator(`[data-row-id="${claims[0].claim_id}"]`).click();
+    await frame.getByRole("heading", { name: "值得停一下的地方", exact: true }).waitFor();
+    assert.equal(await frame.locator(".thinking-prompts li").count(), 2);
+    await frame.getByRole("textbox", { name: "我的思考", exact: true }).fill("也许先问清目标，比记住动作更重要。<script>unsafe()</script>");
+    await frame.getByRole("button", { name: "留下这段思考", exact: true }).click();
+    await frame.locator(".thinking-note").waitFor();
+    assert.equal(await frame.locator(".thinking-note script").count(), 0);
+    await frame.getByRole("button", { name: "继续聊这条", exact: true }).click();
+    await frame.getByText("问题已放入右下角对话，可修改后发送", { exact: true }).waitFor();
+    let events = await (await page.request.get(base + "/events")).json();
+    const context = events.filter(e => e.method === "ui/update-model-context").at(-1).params.structuredContent;
+    assert.equal(context.thinking_notes[0].origin, "human");
+    assert.ok(context.thinking_notes[0].text.includes("问清目标"));
+    assert.equal(events.filter(e => e.method === "ui/message").at(-1).params._meta["openai/message"].send, false);
+    await child.evaluate(() => document.querySelector("#main").scrollTop = 0);
+    await page.screenshot({ path: path.join(output, "thinking-detail.png"), fullPage: true, animations: "disabled" });
+    await frame.locator(".related-thought").getByRole("button").click();
+    await frame.getByText("从这里联想到", { exact: true }).waitFor();
+    await frame.getByRole("button", { name: "返回", exact: true }).click();
+    await frame.getByRole("button", { name: "返回", exact: true }).click();
+    const activity = await read("activity"); assert.equal(activity.total, baseline.total + 1);
+    await frame.locator(".activity-grid button").last().click();
+    await frame.getByText("也许先问清目标，比记住动作更重要。<script>unsafe()</script>", { exact: true }).waitFor();
+    await frame.getByRole("button", { name: "返回", exact: true }).click();
+    await frame.getByRole("button", { name: "整理主题", exact: true }).click();
+    const dialog = frame.getByRole("dialog");
+    await dialog.getByRole("button", { name: "采用", exact: true }).click();
+    await dialog.getByText("已采用", { exact: true }).waitFor();
+    await dialog.getByRole("button", { name: "撤回这次归类", exact: true }).click();
+    await dialog.getByText("已撤回", { exact: true }).waitFor();
+    assert.equal((await read("management", { view: "thoughts", topic: other.topic_id })).total, 0);
+    assert.equal((await read("management", { view: "sources", topic: other.topic_id })).total, 1);
+    await dialog.getByRole("button", { name: "请 Codex 整理", exact: true }).click();
+    await page.screenshot({ path: path.join(output, "thinking-topics.png"), fullPage: true, animations: "disabled" });
+    await dialog.getByRole("button", { name: "关闭", exact: true }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => send({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: { theme: "dark" } }));
+    await frame.locator('html[data-host-theme="dark"]').waitFor();
+    await frame.locator(`[data-row-id="${claims[0].claim_id}"]`).waitFor();
+    await page.screenshot({ path: path.join(output, "thinking-mobile.png"), fullPage: true, animations: "disabled" });
+    assert.ok(await child.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await frame.locator(`[data-row-id="${claims[0].claim_id}"]`).click();
+    await frame.getByRole("heading", { name: "值得停一下的地方", exact: true }).waitFor();
+    await page.screenshot({ path: path.join(output, "thinking-mobile-detail.png"), fullPage: true, animations: "disabled" });
+    assert.ok(await child.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    assert.deepEqual(errors, []);
+    await fs.writeFile(path.join(output, "result.json"), JSON.stringify({ passed: true, checks: ["grounded guide", "human note", "no HTML execution", "current chat context", "editable draft", "backlinks", "activity day", "adopt and undo classification", "mobile dark layout"], suggestion_id: suggestion.id, errors }, null, 2));
+    console.log("Thinking browser workflow passed");
+  } catch (error) {
+    await page.screenshot({ path: path.join(output, "failure.png"), fullPage: true, animations: "disabled" }).catch(() => {});
+    throw error;
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

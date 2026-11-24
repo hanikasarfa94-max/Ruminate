@@ -8,5 +8,5 @@ original handoff documents and private acceptance records remain outside the
 public Git tree. Reports here do not include personal source text, account paths,
 conversation IDs or authentication data.
 
-- `browser-workflow.json`: synthetic iframe/stdio MCP workflow, 2026-11-16.
-- `release-checks.json`: checks for the initial public source tree.
+- `browser-workflow.json`: synthetic iframe/stdio MCP and thinking workflows, 2026-11-24.
+- `release-checks.json`: initial publication checks and subsequent release validation.

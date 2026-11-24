@@ -215,7 +215,10 @@ def _write_records(
                 stream.write(encoded)
 
         write('{"format_version":1,"tables":{')
-        for index, table in enumerate(TABLES):
+        schema = connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
+        tables = TABLES + (("reflection_guides", "reflection_notes", "topic_suggestions",
+                           "claim_topics") if schema >= 7 else ())
+        for index, table in enumerate(tables):
             if index:
                 write(",")
             write(json_dump(table) + ":[")

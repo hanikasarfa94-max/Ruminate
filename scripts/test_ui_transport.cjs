@@ -309,3 +309,19 @@ test("hosts without context support get explicit discussion content only after a
   assert.equal(h.sent.some(item => item.method === "ui/update-model-context"), false);
   assert.match(h.sent.find(item => item.method === "ui/message").params.content[0].text, /chosen/);
 });
+
+test("thinking reads and notes use the bounded MCP adapter without network", async (t) => {
+  const h = harness(); t.after(() => h.transport.dispose());
+  await h.transport.request("/api/thinking?claim_id=clm_1&offset=20");
+  await h.transport.request("/api/activity?timezone=Asia%2FShanghai&day=2026-11-17");
+  await h.transport.request("/api/topic-suggestions?offset=25");
+  await h.transport.request("/api/reflection-notes", { claim_id: "clm_1", text: "My thought", request_id: "note-1" });
+  await h.transport.request("/api/topic-suggestions/decide", { suggestion_id: "tag_1", decision: "revert", request_id: "undo-1" });
+  const calls = h.sent.filter(e => e.method === "tools/call").map(e => e.params.arguments);
+  assert.deepEqual(calls.map(c => c.action), ["thinking", "activity", "topic_suggestions", "save_reflection_note", "decide_topic_suggestion"]);
+  assert.equal(calls[0].params.claim_id, "clm_1");
+  assert.equal(calls[0].params.offset, 20);
+  assert.equal(calls[1].params.timezone, "Asia/Shanghai");
+  assert.equal(calls[3].params.request_id, "note-1");
+  assert.equal(h.network.length, 0);
+});

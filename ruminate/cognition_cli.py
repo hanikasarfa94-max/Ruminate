@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 from typing import Any
 
 from ruminate.application import Application
 
-COMMANDS = {"topics", "claims", "beliefs", "review", "tick", "outputs", "enrich"}
+COMMANDS = {"topics", "claims", "beliefs", "review", "tick", "outputs", "enrich", "thinking"}
 
 
 def _key(parser: argparse.ArgumentParser) -> None:
@@ -16,6 +17,29 @@ def _key(parser: argparse.ArgumentParser) -> None:
 
 
 def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    thinking = sub.add_parser("thinking", help="Reflection guides, notes and activity")
+    thinking_commands = thinking.add_subparsers(dest="action", required=True)
+    get = thinking_commands.add_parser("get")
+    get.add_argument("claim_id")
+    get.add_argument("--offset", type=int, default=0)
+    activity = thinking_commands.add_parser("activity")
+    activity.add_argument("--timezone", default="Asia/Shanghai")
+    activity.add_argument("--day")
+    note = thinking_commands.add_parser("note")
+    note.add_argument("claim_id")
+    note.add_argument("--text", required=True)
+    note.add_argument("--origin", choices=["human", "host_model"], default="host_model")
+    _key(note)
+    guide = thinking_commands.add_parser("guide")
+    guide.add_argument("claim_id")
+    guide.add_argument("--lens", required=True,
+                       choices=["connection", "counterexample", "boundary", "tradeoff", "revisit"])
+    guide.add_argument("--spark", required=True)
+    guide.add_argument("--prompt", action="append", required=True)
+    guide.add_argument("--evidence-id", action="append", required=True)
+    guide.add_argument("--links", default="[]", help="JSON list of claim_id/reason objects")
+    _key(guide)
+
     topics = sub.add_parser("topics", help="Organize local research context")
     topic_commands = topics.add_subparsers(dest="action", required=True)
     create = topic_commands.add_parser("create")
@@ -32,6 +56,22 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     context = topic_commands.add_parser("context")
     context.add_argument("topic")
     context.add_argument("--max-claims", type=int, default=20)
+
+    suggestions = topic_commands.add_parser("suggestions")
+    suggestions.add_argument("--status", default="active")
+    suggestions.add_argument("--offset", type=int, default=0)
+    suggest = topic_commands.add_parser("suggest")
+    suggest.add_argument("target_kind", choices=["source", "claim"])
+    suggest.add_argument("target_id")
+    suggest.add_argument("--topic", required=True)
+    suggest.add_argument("--rationale", required=True)
+    suggest.add_argument("--version-id")
+    suggest.add_argument("--auto-apply", action="store_true")
+    _key(suggest)
+    decide = topic_commands.add_parser("decide")
+    decide.add_argument("suggestion_id")
+    decide.add_argument("decision", choices=["apply", "dismiss", "revert"])
+    _key(decide)
 
     claims = sub.add_parser("claims", help="Keep claims separate from evidence and beliefs")
     claim_commands = claims.add_subparsers(dest="action", required=True)
@@ -156,7 +196,33 @@ def register(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
 
 
 def dispatch(app: Application, args: argparse.Namespace) -> dict[str, Any]:
+    if args.command == "thinking":
+        if args.action == "get":
+            return app.thinking.context(args.claim_id, offset=args.offset)
+        if args.action == "activity":
+            return app.thinking.activity(timezone=args.timezone, day=args.day)
+        if args.action == "note":
+            return app.thinking.save_note(claim_id=args.claim_id, text=args.text,
+                                          origin=args.origin, request_id=args.request_id)
+        try:
+            links = json.loads(args.links)
+        except (ValueError, TypeError) as exc:
+            from ruminate.errors import RuminateError
+
+            raise RuminateError("invalid_input", "links must be JSON") from exc
+        return app.thinking.save_guide(claim_id=args.claim_id, lens=args.lens, spark=args.spark,
+                                       prompts=args.prompt, evidence_ids=args.evidence_id,
+                                       links=links, request_id=args.request_id)
     if args.command == "topics":
+        if args.action == "suggestions":
+            return app.organization.list_suggestions(status=args.status, offset=args.offset)
+        if args.action == "suggest":
+            return app.organization.suggest(target_kind=args.target_kind, target_id=args.target_id,
+                topic_id=args.topic, rationale=args.rationale, version_id=args.version_id,
+                auto_apply=args.auto_apply, request_id=args.request_id)
+        if args.action == "decide":
+            return app.organization.decide(args.suggestion_id, args.decision,
+                                            request_id=args.request_id)
         if args.action == "create":
             return app.knowledge.create_topic(
                 slug=args.slug,

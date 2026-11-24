@@ -42,6 +42,8 @@ const outlines = {
 };
 const state = { view: "thoughts", topics: [], sources: [], projects: [], topic: "", query: "", sort: "recent", status: "all", offset: 0, loadingId: 0, health: {}, dirty: false };
 const detailStack = [];
+const noteDrafts = new Map();
+const lensLabels = { connection: "跨主题联想", counterexample: "换个角度", boundary: "追问边界", tradeoff: "两难之间", revisit: "重新想想" };
 const viewLabels = { thoughts: "想法", library: "资料", outputs: "输出" };
 const viewKeys = { library: "sources", thoughts: "thoughts", outputs: "outputs" };
 let toastTimer;
@@ -72,15 +74,18 @@ window.addEventListener("ruminate:model-context", event => {
   }
 });
 function claimSelection(claim, reviewId) {
-  const evidence = (claim.evidence || []).slice(0, 5).map(ref => ({
+  const evidence = (claim.evidence || []).slice(0, 3).map(ref => ({
     evidence_id: ref.evidence_id, source_id: ref.source_id, version_id: ref.version_id,
     block_id: ref.block_id, title: ref.title, page: ref.page, locator: ref.locator,
-    span: ref.span, quote: (ref.quote || "").slice(0, 1200), quote_truncated: (ref.quote || "").length > 1200, relation: ref.relation,
+    span: ref.span, quote: (ref.quote || "").slice(0, 600), quote_truncated: (ref.quote || "").length > 600, relation: ref.relation,
   }));
   return { source: "ruminate", kind: "claim", claim_id: claim.claim_id, topic_id: claim.topic_id,
-    statement: claim.statement, claim_kind: claim.claim_kind, origin: claim.origin,
+    statement: claim.statement.slice(0, 1000), statement_truncated: claim.statement.length > 1000, claim_kind: claim.claim_kind, origin: claim.origin,
     evidence_status: claim.evidence_status, evidence_count: claim.evidence_count, evidence,
-    evidence_truncated: claim.evidence_count > evidence.length, ...(reviewId ? { review_id: reviewId } : {}) };
+    evidence_truncated: claim.evidence_count > evidence.length,
+    ...(claim.thinking ? { reflection_guide: claim.thinking.guide,
+      thinking_notes: claim.thinking.notes.slice(0, 2).map(n => ({ text: n.text.slice(0, 600), text_truncated: n.text.length > 600, origin: n.origin })),
+      notes_truncated: claim.thinking.note_count > 2 } : {}), ...(reviewId ? { review_id: reviewId } : {}) };
 }
 
 function el(tag, className, text) {
@@ -244,6 +249,7 @@ async function navigate(view, options = {}) {
     if (generation !== state.loadingId || detailStack.length) return;
     if (!result.items.length && state.offset > 0) { state.offset = Math.max(0, state.offset - 25); return navigate(state.view, options); }
     state.signature = listSignature(result);
+    if (state.view === "thoughts") { const activity = el("section", "thinking-activity"); main.insertBefore(activity, filters); renderActivity(activity); }
     setSelection({ source: "ruminate", kind: "list", view: viewKeys[state.view], topic_id: state.topic || null,
       query: state.query, status: state.status, total: result.total, offset: state.offset,
       visible_items: result.items.slice(0, 10).map(item => ({ id: item.id, title: item.title.slice(0, 220), row_kind: item.row_kind })) }, `Ruminate · ${viewLabels[state.view]}`);
@@ -251,6 +257,7 @@ async function navigate(view, options = {}) {
     if (pending) pending.append(el("span", "filter-count", result.pending_count));
     list.replaceChildren(); list.setAttribute("aria-busy", "false");
     const count = el("div", "list-summary", `${result.total} ${state.view === "thoughts" ? "条想法" : "份" + viewLabels[state.view]}${state.query ? " · 搜索结果" : ""}`); count.setAttribute("aria-live", "polite");
+    if (state.view !== "outputs") count.append(button("整理主题", "ghost small", "spark", openTopicSuggestions));
     list.append(count);
     if (result.items.length) {
       list.append(append(el("div", "list-columns"), el("span", "", state.view === "thoughts" ? "想法与依据" : "名称"), el("span", "", "主题"), el("span", "", state.view === "thoughts" && state.status === "later" ? "再次回看" : "保存时间"), el("span")));
@@ -288,8 +295,12 @@ function managementRow(item) {
   const mark = append(el("span", `row-symbol ${isThought ? "thought-symbol" : ""}`), icon(name));
   const subtitle = isBelief ? "我的观点 · 已由你确认" : isSource ? `${domain(item.canonical_uri)} · ${sourceType.full}` : isThought ? `${kindLabels[item.claim_kind]} · ${item.origin === "host_model" ? "AI 提出" : item.origin === "human" ? "手动记录" : "本地整理"} · ${item.evidence_count} 处引用` : `${projectLabels[item.kind] || "研究输出"} · ${item.version ? "版本 " + item.version : "尚未生成"}`;
   const text = append(el("span", "row-copy"), el("span", "row-title", parts.title), el("span", "row-subtitle", subtitle));
-  if (isThought && parts.reason) text.append(el("span", "row-reason", parts.reason));
-  const topics = isSource ? item.topics.map(t => t.name) : [item.topic_name];
+  if (isThought && item.guide) {
+    text.append(el("span", "row-lens", lensLabels[item.guide.lens] || "再想一层"));
+    text.append(el("span", "row-reason", item.guide.spark));
+    text.append(el("span", "row-prompt", item.guide.prompts[0]));
+  } else if (isThought && parts.reason) text.append(el("span", "row-reason", parts.reason));
+  const topics = item.topics ? item.topics.map(t => t.name) : [item.topic_name];
   const topic = el("span", "row-topic", topics.join(" · ") || "未归入主题");
   const dateValue = isThought && state.status === "later" ? item.due_at : item.saved_at;
   const date = el("time", "row-date", formatDate(dateValue)); date.dateTime = dateValue; date.title = new Date(dateValue).toLocaleString("zh-CN");
@@ -350,21 +361,37 @@ async function openBelief(item) {
 async function openClaim(item) {
   const pane = detail("正在打开想法…", "thought-reader"); pane.body.append(loading());
   try {
-    const claim = await api(`/api/claims/${item.claim_id}`);
+    const [claim, thinking] = await Promise.all([
+      api(`/api/claims/${item.claim_id}`), api(`/api/thinking?${params({ claim_id: item.claim_id })}`)
+    ]);
+    claim.thinking = thinking;
     if (!pane.dialog.isConnected) return;
     const parts = thoughtParts(claim.statement); pane.title.textContent = parts.title;
     const origin = claim.origin === "host_model" ? "AI 提出" : claim.origin === "human" ? "手动记录" : "本地整理";
     const meta = append(el("div", "reader-meta"), badge(kindLabels[claim.claim_kind], "green"), el("span", "", origin), el("span", "", item.topic_name), el("span", "", formatDate(item.saved_at)));
     pane.body.replaceChildren(meta);
-    if (parts.reason) pane.body.append(append(el("section", "thought-section"), el("h2", "", "为什么值得回看"), el("p", "", parts.reason)));
-    if (parts.next) pane.body.append(append(el("section", "thought-section"), el("h2", "", "下一步"), el("p", "", parts.next)));
+    if (thinking.guide) renderGuide(pane.body, thinking.guide);
+    if (!thinking.guide && parts.reason) pane.body.append(append(el("section", "thought-section"), el("h2", "", "为什么值得回看"), el("p", "", parts.reason)));
+    if (!thinking.guide && parts.next) pane.body.append(append(el("section", "thought-section"), el("h2", "", "下一步"), el("p", "", parts.next)));
     if (parts.rest) pane.body.append(el("p", "thought-text", parts.rest));
-    if (item.review_id && item.review_question && (!parts.reason || item.review_reason !== "evidence_gap") && item.review_question !== claim.statement && item.review_question !== parts.title) pane.body.append(append(el("section", "thought-section"), el("h2", "", "这次回看的问题"), el("p", "", item.review_question)));
+    if (!thinking.guide && item.review_id && item.review_question && (!parts.reason || item.review_reason !== "evidence_gap") && item.review_question !== claim.statement && item.review_question !== parts.title) pane.body.append(append(el("section", "thought-section"), el("h2", "", "这次回看的问题"), el("p", "", item.review_question)));
     const evidence = append(el("section", "thought-section"), el("h2", "", `原文依据 · ${claim.evidence_count}`));
     (claim.evidence || []).forEach(ref => evidence.append(evidenceQuote(ref)));
     if (!claim.evidence_count) evidence.append(el("p", "muted", "这条想法还没有关联原文。"));
     if (claim.evidence_truncated) evidence.append(el("p", "muted", "当前显示前 20 处引用。"));
-    pane.body.append(evidence);
+    pane.body.append(noteComposer(claim, item.review_id), evidence);
+    if (thinking.related.length) {
+      const related = append(el("section", "thought-section related-thoughts"), el("h2", "", "沿着这条想法"));
+      thinking.related.forEach(link => {
+        const card = append(el("div", "related-thought"), badge(link.direction === "incoming" ? "从这里联想到" : "还可以联系", "gray"),
+          button(thoughtParts(link.statement).title, "belief-claim-button", "arrow", () => openClaim({ ...link, saved_at: link.created_at, topic_name: topicName(link.topic_id) })),
+          el("p", "muted", link.reason));
+        related.append(card);
+      });
+      related.append(el("p", "muted small-copy", "这些联系由 AI 提出，可结合原文继续推敲。"));
+      if (thinking.backlinks_truncated) related.append(el("p", "muted", "这里只展示最近的 3 条反向联系。"));
+      pane.body.append(related);
+    }
     const actions = el("div", "thought-actions");
     if (item.review_id && ["queued", "postponed"].includes(item.review_status)) {
       const feedback = async (action, clicked) => {
@@ -374,7 +401,7 @@ async function openClaim(item) {
       };
       [["有启发", "useful", "check"], ["稍后再看", "postpone", "clock"], ["略过", "dismiss", "close"]].forEach(([label, action, name]) => { const b = button(label, action === "useful" ? "primary" : "secondary", name); b.addEventListener("click", () => feedback(action, b)); actions.append(b); });
     } else if (item.review_status) actions.append(badge(item.review_status === "resolved" ? "已回看 · 有启发" : "已略过", "gray"));
-    if (transport.canDiscuss) actions.append(discussionButton(claimSelection(claim, item.review_id), parts.title));
+    if (transport.canDiscuss) actions.append(discussionButton(() => claimSelection(claim, item.review_id), parts.title));
     pane.body.append(actions, contextHint());
     setSelection(claimSelection(claim, item.review_id), parts.title);
   } catch (error) { pane.body.replaceChildren(empty("没能打开想法", errorMessage(error), "question")); }
@@ -394,8 +421,9 @@ function discussionButton(selection, title) {
   const b = button(transport.canDraft ? "继续聊这条" : "在对话中继续", "soft small", "chat");
   b.addEventListener("click", () => busy(b, async () => {
     suppressedSelection = "";
-    const text = `请结合 Ruminate 中“${title}”的原文依据，帮我找出值得追问的问题和可能的反例。`;
-    const result = await transport.discuss(text, selection, title);
+    const context = typeof selection === "function" ? selection() : selection;
+    const text = context.kind === "topic_organization" ? "请阅读 Ruminate 的本地资料和想法，优先沿用已有主题，说明推荐理由并补充归类；保留原有分类，不重复已略过或撤回的建议。" : `请结合 Ruminate 中“${title}”的原文依据和我留下的思考，先追问一个能推进理解的问题，也可以联系其他主题；不要急着替我下结论。`;
+    const result = await transport.discuss(text, context, title);
     if (transport.canUpdateContext) showContextHint("右下角对话已关联当前内容");
     toast(result.draft ? "问题已放入右下角对话，可修改后发送" : "已把想法和引用带回对话");
   }, "正在带入对话…"));
@@ -672,7 +700,7 @@ async function openSource(id, options = {}) {
     const quote = options.span && options.blockId ? Array.from(selected[0]?.text || "").slice(options.span.start, options.span.end).join("") : "";
     setSelection({ source: "ruminate", kind: "source", source_id: source.source_id, version_id: source.version_id, title: source.title, display_title: source.display_title, uri: source.canonical_uri,
       reading_mode: mode, ...(mode === "image" ? { page } : {}), selected_block_id: options.blockId || null, selected_span: options.span || null,
-      selected_quote: quote.slice(0, 1200), quote_truncated: quote.length > 1200,
+      selected_quote: quote.slice(0, 600), quote_truncated: quote.length > 600,
       blocks: selected.map(block => ({ block_id: block.block_id, page: block.page, text: block.text.slice(0, 1600), text_truncated: block.text.length > 1600 })) }, source.title);
   }
   function renderBlocks(content) {
@@ -868,3 +896,116 @@ document.addEventListener("visibilitychange", refreshVisible);
     document.querySelector("#main").replaceChildren(empty("还没连上资料库", errorMessage(error), "question", button("重新连接", "primary", "review", () => location.reload())));
   }
 })();
+
+function renderGuide(container, guide) {
+  const block = append(el("section", "reflection-guide"), el("div", "row-lens", `${lensLabels[guide.lens] || "再想一层"} · AI 提出`),
+    el("h2", "", "值得停一下的地方"), el("p", "guide-spark", guide.spark));
+  const prompts = el("ol", "thinking-prompts");
+  guide.prompts.forEach(prompt => prompts.append(el("li", "", prompt)));
+  block.append(el("h3", "", "可以从这里想起"), prompts); container.append(block);
+}
+function noteComposer(claim, reviewId) {
+  const section = append(el("section", "thought-section note-composer"), el("h2", "", "我的思考"));
+  const form = el("form"), field = el("textarea", "input");
+  field.setAttribute("aria-label", "我的思考"); field.maxLength = 4000; field.rows = 3;
+  field.placeholder = "一个反例、一段经历，或一个还没想清楚的判断…";
+  field.value = noteDrafts.get(claim.claim_id) || "";
+  field.addEventListener("input", () => noteDrafts.set(claim.claim_id, field.value));
+  const save = button("留下这段思考", "primary small"); save.type = "submit";
+  const notes = el("div", "thinking-notes");
+  const renderNotes = rows => rows.forEach(note => notes.append(append(el("article", "thinking-note"),
+    el("p", "", note.text), el("span", "muted small-copy", `${note.origin === "human" ? "我写下的" : "AI 补充"} · ${formatDate(note.created_at)}`))));
+  renderNotes(claim.thinking.notes);
+  form.addEventListener("submit", event => {
+    event.preventDefault(); if (!field.value.trim()) { field.focus(); return; }
+    busy(save, async () => {
+      const submitted = field.value.trim();
+      const saved = await api("/api/reflection-notes", { claim_id: claim.claim_id, text: submitted });
+      claim.thinking.notes.unshift(saved); claim.thinking.note_count++;
+      notes.replaceChildren(); renderNotes(claim.thinking.notes);
+      if (field.value.trim() === submitted) { field.value = ""; noteDrafts.delete(claim.claim_id); }
+      state.dirty = true;
+      setSelection(claimSelection(claim, reviewId), thoughtParts(claim.statement).title);
+      toast("思考已留下"); field.focus();
+    });
+  });
+  append(form, field, append(el("div", "note-footer"), el("span", "muted small-copy", "不必想完整，先留下这一刻的理解。"), save));
+  append(section, form, notes);
+  if (claim.thinking.next_offset !== null) {
+    let offset = claim.thinking.next_offset;
+    const more = button("更早的思考", "secondary small");
+    more.addEventListener("click", () => busy(more, async () => {
+      const data = await api(`/api/thinking?${params({ claim_id: claim.claim_id, offset })}`);
+      renderNotes(data.notes); offset = data.next_offset; if (offset === null) more.remove();
+    })); section.append(more);
+  }
+  return section;
+}
+async function renderActivity(container) {
+  try {
+    const data = await api("/api/activity"); if (!container.isConnected) return;
+    const copy = append(el("div", "activity-copy"), el("h2", "", "思考足迹"),
+      el("p", "muted", data.active_days ? `近 12 周，有 ${data.active_days} 天留下了思考` : "写下一个想法，或回看一条建议"),
+      el("span", "muted small-copy", "全部主题 · 北京时间 · 点亮的日期可以回看"));
+    const grid = el("div", "activity-grid"); grid.setAttribute("aria-label", "最近十二周的思考记录，按周排列");
+    data.days.forEach(day => {
+      const level = day.count === 0 ? 0 : Math.min(4, Math.ceil(Math.log2(day.count + 1)));
+      const cell = el(day.count ? "button" : "span", `activity-cell activity-level-${level}${day.future ? " future" : ""}${day.date === data.today ? " today" : ""}`);
+      const label = `${day.date} · ${day.count} 次思考记录`; cell.title = label; cell.setAttribute("aria-label", label);
+      if (day.count) { cell.type = "button"; cell.addEventListener("click", () => openActivityDay(day.date)); }
+      grid.append(cell);
+    });
+    const legend = append(el("div", "activity-legend"), el("span", "", "少"), ...[0, 1, 2, 3, 4].map(i => el("span", `activity-cell activity-level-${i}`)), el("span", "", "多"));
+    container.replaceChildren(copy, append(el("div", "activity-chart"), grid, legend));
+  } catch { if (container.isConnected) container.replaceChildren(button("重新加载思考足迹", "ghost small", "review", () => renderActivity(container))); }
+}
+async function openActivityDay(day) {
+  const pane = detail(`${day} 的思考`, "activity-reader"); pane.body.append(loading());
+  try {
+    const data = await api(`/api/activity?${params({ day })}`); if (!pane.dialog.isConnected) return;
+    pane.body.replaceChildren(el("p", "muted", "写下的想法和主动回看都留在这一天。"));
+    data.entries.forEach(entry => {
+      const feedbackLabels = { useful: "有启发", postpone: "稍后再看", dismiss: "略过", irrelevant: "不相关", already_known: "已经知道" };
+      const text = entry.kind === "review" ? `回看 · ${feedbackLabels[entry.text] || entry.text}` : entry.text;
+      pane.body.append(append(el("section", "activity-entry"),
+        button(thoughtParts(entry.title).title, "belief-claim-button", "arrow", () => openClaim({ claim_id: entry.claim_id, saved_at: entry.created_at })), el("p", "", text)));
+    });
+    if (data.entries_truncated) pane.body.append(el("p", "muted", "当前显示当天最近的 100 条记录。"));
+  } catch (error) { pane.body.replaceChildren(empty("没能打开这一天", errorMessage(error), "clock")); }
+}
+async function openTopicSuggestions() {
+  const modal = dialog("整理主题", "Codex 阅读内容后补充归类，每一条都保留理由。", "topic-suggestions");
+  const rows = el("div", "topic-suggestion-list"); let offset = 0;
+  if (transport.canDiscuss) {
+    const organize = discussionButton({ source: "ruminate", kind: "topic_organization", topic_id: state.topic || null,
+      instructions: "Read local sources and thoughts. Use suggest_topic with specific reasons. Keep manual topics and prior dismissals. Automatic additions are authorized." }, "整理主题");
+    organize.querySelector("span").textContent = "请 Codex 整理";
+    modal.body.append(organize, el("p", "muted small-copy", "把整理请求带入右下角对话；配置定时反刍后，也可自动整理新内容。"));
+  }
+  modal.body.append(rows);
+  const more = button("更多整理记录", "secondary small");
+  const load = async () => {
+    const data = await api(`/api/topic-suggestions?${params({ offset })}`);
+    if (!modal.dialog.isConnected) return;
+    if (!data.total) rows.replaceChildren(el("p", "muted", "还没有分类建议。可以请 Codex 从现有资料开始整理。"));
+    data.items.forEach(item => {
+      const card = append(el("article", "topic-suggestion"), el("h3", "", thoughtParts(item.title).title),
+        append(el("div", "reader-meta"), badge(item.topic_name, "green"), el("span", "", item.status === "applied" ? "AI 已补充归类" : "AI 推荐")), el("p", "", item.rationale));
+      const actions = el("div", "thought-actions");
+      const options = item.status === "applied" ? [["撤回这次归类", "revert"]] : [["采用", "apply"], ["略过", "dismiss"]];
+      options.forEach(([label, decision]) => {
+        const b = button(label, "secondary small");
+        b.addEventListener("click", () => busy(b, async () => {
+          await api("/api/topic-suggestions/decide", { suggestion_id: item.id, decision });
+          actions.replaceChildren(badge(decision === "apply" ? "已采用" : decision === "revert" ? "已撤回" : "已略过", "gray"));
+          await refreshState(); state.dirty = true;
+          toast(decision === "revert" ? "已撤回自动添加的分类，手动选择会保留" : "分类记录已更新");
+        })); actions.append(b);
+      }); card.append(actions); rows.append(card);
+    });
+    offset = data.next_offset; if (offset !== null) modal.body.append(more); else more.remove();
+  };
+  more.addEventListener("click", () => busy(more, load));
+  modal.dialog.addEventListener("close", () => { if (state.dirty && !detailStack.length) navigate(state.view); });
+  try { await load(); } catch (error) { rows.append(el("p", "", errorMessage(error))); }
+}

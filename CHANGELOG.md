@@ -1,10 +1,23 @@
 # Changelog
 
 This log describes user-visible changes. Versions before the public repository
-were local development milestones. The current source version is 0.6.0.
+were local development milestones. The current source version is 0.7.0.
 GitHub tags distribute source; there is no PyPI publication.
 
-## Unreleased
+## 0.7.0 — 2026-11-24
+
+- Evidence-linked reflection guides with progressive prompts, reasoned connections
+  and backlinks. Save personal thinking beside a question and continue in host chat.
+- Codex-authored topic recommendations with additive automatic classification,
+  reviewable reasons and undo that preserves manual choices. Thoughts can span topics.
+- A twelve-week activity calendar records human notes and review feedback; background
+  generation and page views do not inflate it. Dates reopen the related thoughts.
+- Schema 7 preserves guides, notes and classification history in backups. Cross-topic
+  output snapshots remain readable after a classification is undone.
+- Extend the scheduled reflection workflow to organize new content and build guides.
+  The application still uses the current host, with no new model API dependency.
+- Update the one-command installer to v0.7.0 and include the reflection setup docs
+  in the installed runtime. Existing research data and scoped permissions are retained.
 
 ## 0.6.0 — 2026-11-16
 

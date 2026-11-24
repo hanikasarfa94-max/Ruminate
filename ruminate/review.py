@@ -203,8 +203,9 @@ class ReviewService:
         sql = "SELECT * FROM claims WHERE status='candidate'"
         parameters: list[str | int] = []
         if topic is not None:
-            sql += " AND topic_id=?"
-            parameters.append(topic)
+            sql += (" AND (topic_id=? OR id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?))")
+            parameters.extend([topic, topic])
         sql += " ORDER BY created_at,id LIMIT ?"
         parameters.append(_MAX_CLAIMS + 1)
         claims = connection.execute(sql, parameters).fetchall()
@@ -445,8 +446,9 @@ class ReviewService:
         )
         parameters: list[str | int] = [timestamp(now)]
         if topic is not None:
-            sql += " AND c.topic_id=?"
-            parameters.append(topic)
+            sql += (" AND (c.topic_id=? OR c.claim_id IN "
+                    "(SELECT claim_id FROM claim_topics WHERE topic_id=?))")
+            parameters.extend([topic, topic])
         sql += " ORDER BY c.priority DESC,c.created_at,c.id LIMIT 1000"
         rows = connection.execute(sql, parameters).fetchall()
         selected = []

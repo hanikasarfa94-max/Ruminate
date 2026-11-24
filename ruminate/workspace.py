@@ -14,6 +14,7 @@ from ruminate.errors import RuminateError
 from ruminate.persistence.common import validate_text
 
 ReadAction = Literal[
+    "thinking", "activity", "topic_suggestions",
     "belief",
     "management",
     "state",
@@ -32,6 +33,7 @@ ReadAction = Literal[
     "job",
 ]
 WriteAction = Literal[
+    "save_reflection_note", "decide_topic_suggestion",
     "create_topic",
     "update_topic",
     "update_source",
@@ -46,6 +48,9 @@ WriteAction = Literal[
 ]
 
 _READ_FIELDS = {
+    "thinking": {"claim_id", "offset"},
+    "activity": {"timezone", "day"},
+    "topic_suggestions": {"status", "limit", "offset"},
     "belief": {"belief_id", "limit", "offset"},
     "management": {"view", "topic", "query", "status", "sort", "limit", "offset"},
     "state": set(),
@@ -64,6 +69,8 @@ _READ_FIELDS = {
     "job": {"job_id"},
 }
 _WRITE_FIELDS = {
+    "save_reflection_note": {"claim_id", "text"},
+    "decide_topic_suggestion": {"suggestion_id", "decision"},
     "create_topic": {"slug", "name", "description"},
     "update_topic": {"topic_id", "name", "description"},
     "update_source": {"source_id", "title", "topic_ids", "reset_title"},
@@ -139,6 +146,18 @@ class WorkspaceAdapter:
     def read(self, action: ReadAction, params: dict[str, Any]) -> Any:
         _fields(action, params, write=False)
         app = self.app
+        if action == "thinking":
+            return app.thinking.context(_required(params, "claim_id"),
+                                        offset=_integer(params, "offset", 0, query=True))
+        if action == "activity":
+            return app.thinking.activity(timezone=_required(params, "timezone", "Asia/Shanghai"),
+                                         day=_optional(params, "day"))
+        if action == "topic_suggestions":
+            return app.organization.list_suggestions(
+                status=_required(params, "status", "active"),
+                limit=_integer(params, "limit", 25, query=True),
+                offset=_integer(params, "offset", 0, query=True),
+            )
         if action == "belief":
             return app.knowledge.get_belief(
                 _required(params, "belief_id"),
@@ -225,6 +244,13 @@ class WorkspaceAdapter:
         app = self.app
         request_id = _required(params, "request_id")
         validate_text(request_id, "request_id", 100)
+        if action == "save_reflection_note":
+            return app.thinking.save_note(claim_id=_required(params, "claim_id"),
+                                          text=_required(params, "text"), origin="human",
+                                          request_id=request_id)
+        if action == "decide_topic_suggestion":
+            return app.organization.decide(_required(params, "suggestion_id"),
+                                           _required(params, "decision"), request_id=request_id)
         if action == "create_topic":
             return app.knowledge.create_topic(
                 slug=_required(

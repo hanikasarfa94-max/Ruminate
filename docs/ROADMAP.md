@@ -12,9 +12,14 @@ before expanding into more services.
 - CLI, stdio MCP, four skills and an embedded Ideas / Sources / Outputs workspace.
 - One-command GitHub installer with local runtime setup, updates and host checks.
 - Page rendering for host vision and a workflow for scheduled review suggestions.
+- Grounded reflection guides, personal thinking notes and reasoned backlinks.
+- Host-authored topic recommendations and reversible secondary classifications.
+- A small activity calendar for actual human thinking and review.
 
 ## Next
 
+- Simplify the path from capturing an idea to revisiting it and adding personal notes.
+- Reduce routine automation notifications and make new ideas less intrusive in the workspace.
 - Add archive/delete impact previews that preserve historical citations.
 - Validate fresh installations on more supported host and operating-system versions.
 - Improve source selection and duplicate handling in review suggestions.

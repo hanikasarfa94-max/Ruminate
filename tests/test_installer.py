@@ -33,6 +33,8 @@ def test_release_files_exclude_developer_settings_and_research(tmp_path: Path) -
         private.write_text("private")
     files = installer.runtime_files(checkout)
     assert Path("ruminate/ui/app.js") in files
+    assert Path("docs/THINKING_WORKSPACE.md") in files
+    assert Path("docs/auto-reflection-prompt.md") in files
     assert not any(str(file).startswith((".local", ".codex", ".env")) for file in files)
     (checkout / "ruminate/unexpected").symlink_to(checkout / ".env")
     with pytest.raises(ValueError, match="symlink"):

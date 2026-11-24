@@ -152,7 +152,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.server.events.append(data)
                 self.send(b'{}')
             elif self.path == "/call" and data.get("name") in {
-                "ui_read", "ui_write", "record_claim"
+                "ui_read", "ui_write", "record_claim", "save_reflection_guide", "suggest_topic"
             }:
                 future = asyncio.run_coroutine_threadsafe(
                     self.server.client.call_tool(data["name"], data.get("arguments", {})),

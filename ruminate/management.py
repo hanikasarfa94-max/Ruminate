@@ -142,6 +142,20 @@ class ManagementService:
                         "ON st.topic_id=t.id WHERE st.source_id=? ORDER BY t.name,t.id",
                         (item["id"],),
                     )]
+            if view == "thoughts":
+                from ruminate.thinking import guide_row
+
+                for item in items:
+                    if item["row_kind"] == "claim":
+                        item["guide"] = guide_row(connection.execute(
+                            "SELECT * FROM reflection_guides WHERE claim_id=? "
+                            "ORDER BY created_at DESC,rowid DESC LIMIT 1", (item["id"],),
+                        ).fetchone())
+                        item["topics"] = [dict(row) for row in connection.execute(
+                            "SELECT id AS topic_id,name FROM topics WHERE id=? OR id IN "
+                            "(SELECT topic_id FROM claim_topics WHERE claim_id=?) ORDER BY name,id",
+                            (item["topic_id"], item["id"]),
+                        )]
             pending_sql, pending_args = self._thoughts(topic_id, "", "pending", current)
             pending = connection.execute(
                 "SELECT COUNT(*) FROM (" + pending_sql + ")", pending_args
@@ -208,8 +222,9 @@ class ManagementService:
         if status != "all":
             sql += " AND r.id IS NOT NULL"
         if topic:
-            sql += " AND c.topic_id=?"
-            args.append(topic)
+            sql += (" AND (c.topic_id=? OR EXISTS(SELECT 1 FROM claim_topics ct "
+                    "WHERE ct.claim_id=c.id AND ct.topic_id=?))")
+            args.extend([topic, topic])
         if query:
             sql += " AND instr(lower(c.statement),lower(?))>0"
             args.append(query)

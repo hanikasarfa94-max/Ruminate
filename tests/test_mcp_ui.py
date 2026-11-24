@@ -49,7 +49,7 @@ def test_stdio_app_discovery_resource_and_readonly_workspace(tmp_path: Path) -> 
         async with asyncio.timeout(30):
             async with Client(parameters(app.config.data_dir)) as client:
                 tools = {tool.name: tool for tool in (await client.list_tools()).tools}
-                assert len(tools) == 28
+                assert len(tools) == 34
                 assert tools["open_workspace"].meta["ui"] == {
                     "resourceUri": UI_URI,
                     "visibility": ["model", "app"],

@@ -24,8 +24,10 @@ if TYPE_CHECKING:
     from ruminate.enrichment import EnrichmentService
     from ruminate.knowledge import KnowledgeService
     from ruminate.management import ManagementService
+    from ruminate.organization import OrganizationService
     from ruminate.outputs import OutputService
     from ruminate.review import ReviewService
+    from ruminate.thinking import ThinkingService
 
 
 class Application:
@@ -67,6 +69,18 @@ class Application:
         from ruminate.backup import BackupService
 
         return BackupService(self.config)
+
+    @property
+    def thinking(self) -> "ThinkingService":
+        from ruminate.thinking import ThinkingService
+
+        return ThinkingService(self.config)
+
+    @property
+    def organization(self) -> "OrganizationService":
+        from ruminate.organization import OrganizationService
+
+        return OrganizationService(self.config)
 
     def initialize(self) -> dict[str, Any]:
         if not fts5_available():

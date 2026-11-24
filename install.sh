@@ -6,7 +6,7 @@ main() {
   umask 077
   local install_dir="${RUMINATE_INSTALL_DIR:-}" source_dir="" data_dir="${RUMINATE_DATA_DIR:-}"
   local codex_bin="${RUMINATE_CODEX:-}" uv_bin="${RUMINATE_UV:-}" arg candidate stage
-  local ref="${RUMINATE_REF:-v0.6.0}"
+  local ref="${RUMINATE_REF:-v0.7.0}"
   while [ "$#" -gt 0 ]; do
     arg="$1"
     case "$arg" in
@@ -18,7 +18,7 @@ Install Ruminate into your Codex plugin library (macOS / Linux).
   bash install.sh --source /path/to/Ruminate   # install a local checkout
 
 Re-run to update. Research data is preserved. No sudo, API key or Git login needed.
-RUMINATE_REF selects a GitHub tag or commit (default: v0.6.0).
+RUMINATE_REF selects a GitHub tag or commit (default: v0.7.0).
 HELP
         return 0 ;;
       --source|--data-dir|--install-dir|--codex|--uv)

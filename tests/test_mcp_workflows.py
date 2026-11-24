@@ -40,7 +40,7 @@ def test_stdio_write_workflow_and_durable_replay(tmp_path: Path) -> None:
         async with asyncio.timeout(30):
             async with Client(parameters(app.config.data_dir, source)) as client:
                 listing = await client.list_tools()
-                assert len(listing.tools) == 28
+                assert len(listing.tools) == 34
                 by_name = {tool.name: tool for tool in listing.tools}
                 for name in (
                     "create_topic",

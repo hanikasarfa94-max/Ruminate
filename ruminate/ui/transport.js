@@ -168,7 +168,7 @@
       window.addEventListener("message", onMessage);
       try {
         const result = await rpc("ui/initialize", {
-          appInfo: { name: "Ruminate", version: "0.6.0" },
+          appInfo: { name: "Ruminate", version: "0.7.0" },
           appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
           protocolVersion: PROTOCOL_VERSION,
         }, 10000);
@@ -222,6 +222,7 @@
     let match;
     if (body !== undefined) {
       const actions = {
+        "/api/reflection-notes": "save_reflection_note", "/api/topic-suggestions/decide": "decide_topic_suggestion",
         "/api/topics": "create_topic", "/api/ingest/url": "capture_url",
         "/api/ingest/file": "upload_file", "/api/claims": "record_claim",
         "/api/reviews/generate": "generate_reviews", "/api/reviews/present": "present_reviews",
@@ -233,7 +234,7 @@
       if ((match = pathname.match(/^\/api\/sources\/([a-z0-9_]+)\/edit$/))) return { name: "ui_write", arguments: { action: "update_source", params: { ...body, source_id: match[1] } } };
       if ((match = pathname.match(/^\/api\/topics\/([a-z0-9_-]+)\/edit$/))) return { name: "ui_write", arguments: { action: "update_topic", params: { ...body, topic_id: match[1] } } };
     } else {
-      const actions = { "/api/management": "management", "/api/state": "state", "/api/topics": "topics", "/api/sources": "sources", "/api/reviews": "reviews", "/api/projects": "projects" };
+      const actions = { "/api/thinking": "thinking", "/api/activity": "activity", "/api/topic-suggestions": "topic_suggestions", "/api/management": "management", "/api/state": "state", "/api/topics": "topics", "/api/sources": "sources", "/api/reviews": "reviews", "/api/projects": "projects" };
       if (actions[pathname]) return { name: "ui_read", arguments: { action: actions[pathname], params: query } };
       if ((match = pathname.match(/^\/api\/sources\/([a-z0-9_]+)(?:\/(page|observations))?$/))) {
         return { name: "ui_read", arguments: { action: { page: "source_page", observations: "observations" }[match[2]] || "source", params: { ...query, source_id: match[1] } } };
